@@ -20,7 +20,7 @@ Multi-label bird species classification from 5-second audio clips.
 - BCEWithLogitsLoss for multi-label classification
 
 ## Results
-- Best validation AUC: [see training logs in notebook]
+- Best validation AUC: 0.8529
 
 ## Live Demo
 🤗 [Hugging Face Space](https://huggingface.co/spaces/YOUR_USERNAME/birdclef-2025-demo)
