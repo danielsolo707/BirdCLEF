@@ -26,4 +26,4 @@ Multi-label bird species classification from 5-second audio clips.
 🤗 [Hugging Face Space](https://huggingface.co/spaces/YOUR_USERNAME/birdclef-2025-demo)
 
 ## Author
-Your Name — Creative Developer | ML Engineer
+Daniel soleimani
