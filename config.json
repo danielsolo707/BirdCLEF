@@ -1,0 +1,1 @@
+{"SR": 32000, "DURATION": 5, "N_FFT": 1024, "HOP_LENGTH": 64, "N_MELS": 128, "FMIN": 50, "FMAX": 16000, "BATCH_SIZE": 16, "EPOCHS": 10, "LR": 0.001, "SEED": 42, "ROOT": "/kaggle/input/competitions/birdclef-2025/", "METADATA": "/kaggle/input/competitions/birdclef-2025/train.csv", "NUM_CLASSES": 206, "DEVICE": "cuda"}
