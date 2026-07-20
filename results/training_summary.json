@@ -1,0 +1,22 @@
+{
+  "project": "BirdCLEF+ 2025 Sound Event Detection",
+  "best_val_auc": 0.8529,
+  "epochs": 10,
+  "optimizer": "AdamW",
+  "scheduler": "CosineAnnealingLR",
+  "loss": "BCEWithLogitsLoss",
+  "mixed_precision": true,
+  "hardware": "Tesla T4 (Kaggle)",
+  "train_samples": 22851,
+  "val_samples": 5713,
+  "total_clips": 28564,
+  "num_classes": 206,
+  "input": "128x256 log-mel spectrogram (1 channel)",
+  "backbone": "EfficientNet-B0 (timm tf_efficientnet_b0, in_chans=1)",
+  "head": "SED 1x1 conv head + temporal attention pooling",
+  "checkpoint": "model.pth",
+  "notes": [
+    "Mel spectrograms were precomputed offline for ~10x training speedup.",
+    "Metrics above reflect the completed training run; re-running train.py will produce new checkpoints under runs/."
+  ]
+}

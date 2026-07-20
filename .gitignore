@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Training artifacts (keep only the published checkpoint at repo root)
+runs/
+outputs/
+wandb/
+*.log
+
+# Data (never commit competition audio / mels)
+data/
+raw/
+mels/
+*.ogg
+*.wav
+*.mp3
+*.flac
+*.npy
+
+# Notebooks / IDE
+.ipynb_checkpoints/
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
