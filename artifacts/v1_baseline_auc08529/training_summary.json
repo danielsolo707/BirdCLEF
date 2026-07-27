@@ -1,0 +1,46 @@
+{
+  "project": "BirdCLEF+ 2025 Sound Event Detection",
+  "source_notebook": "https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be",
+  "best_val_auc": 0.8529,
+  "epochs": 10,
+  "optimizer": "AdamW",
+  "optimizer_hparams": {
+    "lr": 0.001,
+    "weight_decay": 1e-5
+  },
+  "scheduler": "CosineAnnealingLR",
+  "loss": "BCEWithLogitsLoss",
+  "mixed_precision": true,
+  "hardware": "Tesla T4 (Kaggle)",
+  "train_samples": 22851,
+  "val_samples": 5713,
+  "total_clips": 28564,
+  "num_classes": 206,
+  "val_ratio": 0.2,
+  "stratify": "primary_label",
+  "input": "128x256 log-mel spectrogram (1 channel), min-max normalized to [0, 1]",
+  "audio": {
+    "sr": 32000,
+    "duration_sec": 5,
+    "crop": "middle",
+    "n_fft": 1024,
+    "hop_length": 64,
+    "n_mels": 128,
+    "fmin": 50,
+    "fmax": 16000
+  },
+  "backbone": "EfficientNet-B0 (timm efficientnet_b0, in_chans=1, pretrained ImageNet)",
+  "head": "SED 1x1 conv (feature_dim→256→206, Dropout 0.3) + temporal attention pooling",
+  "augmentations": [
+    "RandomHorizontalFlip(p=0.5)",
+    "ColorJitter(brightness=0.15, contrast=0.15)"
+  ],
+  "precomputed_mels": true,
+  "mel_cache_naming": "path/with/slashes.ogg → path_with_slashes.npy",
+  "checkpoint": "model.pth",
+  "notes": [
+    "Training code in this repo is aligned with the Kaggle notebook that produced model.pth.",
+    "Mel spectrograms were precomputed offline for ~10x training speedup.",
+    "Metrics above reflect the completed Kaggle training run; re-running train.py will produce new checkpoints under runs/."
+  ]
+}
