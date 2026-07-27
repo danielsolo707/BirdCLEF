@@ -25,7 +25,8 @@ mels/
 *.mp3
 *.flac
 *.npy
-
+INTERVIEW_PRESENTATION.md
+INTERVIEW_PRESENTATION_FA.md
 # Notebooks / IDE
 .ipynb_checkpoints/
 .idea/
