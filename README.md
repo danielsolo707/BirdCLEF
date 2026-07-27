@@ -1,4 +1,4 @@
-# BirdCLEF+ 2025 — Sound Event Detection
+﻿# BirdCLEF+ 2025 â€” Sound Event Detection
 
 Multi-label bird species classification from 5-second audio clips using an **EfficientNet-B0** backbone and a **Sound Event Detection (SED)** head with **attention pooling**.
 
@@ -6,7 +6,7 @@ Multi-label bird species classification from 5-second audio clips using an **Eff
 |---|---|
 | **Task** | Multi-label audio classification (206 species) |
 | **Best validation AUC** | **0.8529** |
-| **Stack** | PyTorch · timm · librosa · torchvision |
+| **Stack** | PyTorch Â· timm Â· librosa Â· torchvision |
 | **Hardware** | Tesla T4 (Kaggle) |
 | **Checkpoint** | [`model.pth`](./model.pth) |
 | **Source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
@@ -23,21 +23,21 @@ BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** tar
 
 ```
 Audio (5s, 32 kHz, middle crop)
-    │
-    ▼
-Log-mel spectrogram  (1 × 128 × 256), min-max → [0, 1]
-    │
-    ▼
+    â”‚
+    â–¼
+Log-mel spectrogram  (1 Ã— 128 Ã— 256), min-max â†’ [0, 1]
+    â”‚
+    â–¼
 EfficientNet-B0 backbone  (timm efficientnet_b0, in_chans=1, no classifier)
-    │  features: (B, feature_dim, H, W)  # typically 1280
-    ▼
-SED head  (1×1 Conv → 256 → BN → ReLU → Dropout(0.3) → 1×1 Conv → 206)
-    │  framewise logits: (B, 206, T)
-    ▼
-Temporal attention pooling  (Linear 206→128 → Tanh → Linear → 1 + softmax over T)
-    │
-    ▼
-Clip-level multi-label logits  (B, 206)  →  sigmoid → species probabilities
+    â”‚  features: (B, feature_dim, H, W)  # typically 1280
+    â–¼
+SED head  (1Ã—1 Conv â†’ 256 â†’ BN â†’ ReLU â†’ Dropout(0.3) â†’ 1Ã—1 Conv â†’ 206)
+    â”‚  framewise logits: (B, 206, T)
+    â–¼
+Temporal attention pooling  (Linear 206â†’128 â†’ Tanh â†’ Linear â†’ 1 + softmax over T)
+    â”‚
+    â–¼
+Clip-level multi-label logits  (B, 206)  â†’  sigmoid â†’ species probabilities
 ```
 
 **Loss:** `BCEWithLogitsLoss`  
@@ -51,23 +51,23 @@ Clip-level multi-label logits  (B, 206)  →  sigmoid → species probabilities
 
 ```
 BirdCLEF/
-├── model.pth                 # trained weights (val AUC 0.8529)
-├── config.json               # audio + training hyperparameters
-├── classes.json              # 206 species labels
-├── label2id.json             # label → class index
-├── results/
-│   └── training_summary.json # frozen metrics from the completed run
-├── requirements.txt
-├── scripts/
-│   └── precompute_mels.py    # optional: cache mels as .npy
-└── src/
-    ├── model.py              # BirdCLEFSED / BirdSEDModel (matches model.pth)
-    ├── audio.py              # mel extraction (Kaggle get_melspec)
-    ├── dataset.py            # multi-label Dataset + augs
-    ├── train.py              # full training loop
-    ├── evaluate.py           # ROC-AUC evaluation
-    ├── inference.py          # single-file / folder prediction
-    └── utils.py
+â”œâ”€â”€ model.pth                 # trained weights (val AUC 0.8529)
+â”œâ”€â”€ config.json               # audio + training hyperparameters
+â”œâ”€â”€ classes.json              # 206 species labels
+â”œâ”€â”€ label2id.json             # label â†’ class index
+â”œâ”€â”€ results/
+â”‚   â””â”€â”€ training_summary.json # frozen metrics from the completed run
+â”œâ”€â”€ requirements.txt
+â”œâ”€â”€ scripts/
+â”‚   â””â”€â”€ precompute_mels.py    # optional: cache mels as .npy
+â””â”€â”€ src/
+    â”œâ”€â”€ model.py              # BirdCLEFSED / BirdSEDModel (matches model.pth)
+    â”œâ”€â”€ audio.py              # mel extraction (Kaggle get_melspec)
+    â”œâ”€â”€ dataset.py            # multi-label Dataset + augs
+    â”œâ”€â”€ train.py              # full training loop
+    â”œâ”€â”€ evaluate.py           # ROC-AUC evaluation
+    â”œâ”€â”€ inference.py          # single-file / folder prediction
+    â””â”€â”€ utils.py
 ```
 
 ---
@@ -76,7 +76,7 @@ BirdCLEF/
 
 | Split | Clips | Metric |
 |-------|------:|--------|
-| Train | 22,851 | — |
+| Train | 22,851 | â€” |
 | Validation | 5,713 | **Macro ROC-AUC = 0.8529** |
 | Total labeled clips | 28,564 | 206 species |
 
@@ -95,7 +95,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-**Data:** download BirdCLEF+ 2025 from [Kaggle](https://www.kaggle.com/competitions/birdclef-2025) (requires competition access). Point the CLI at your local `train.csv` and audio folder — nothing is hardcoded to `/kaggle/input`.
+**Data:** download BirdCLEF+ 2025 from [Kaggle](https://www.kaggle.com/competitions/birdclef-2025) (requires competition access). Point the CLI at your local `train.csv` and audio folder â€” nothing is hardcoded to `/kaggle/input`.
 
 ---
 
@@ -117,10 +117,10 @@ python -m src.evaluate \
   --audio-dir path/to/audio
 ```
 
-### Train (optional — weights already provided)
+### Train (optional â€” weights already provided)
 
 ```bash
-# Optional speedup: precompute mels once (~10× faster epochs)
+# Optional speedup: precompute mels once (~10Ã— faster epochs)
 python scripts/precompute_mels.py \
   --audio-dir path/to/train_audio \
   --output-dir path/to/mels \
@@ -140,7 +140,7 @@ Checkpoints (`model_best.pth`, `birdclef_best_model.pth`, `model_last.pth`) and 
 
 ## Design notes
 
-- **SED + attention** keeps frame-level structure instead of global pooling only — better for short, sparse bird calls.
+- **SED + attention** keeps frame-level structure instead of global pooling only â€” better for short, sparse bird calls.
 - **1-channel EfficientNet** reuses a strong ImageNet inductive bias on spectrograms.
 - **Precomputed mels** trade disk for a large wall-clock win during multi-epoch training (Kaggle cache naming: `folder_file.npy`).
 - **Train augs** match the notebook: horizontal flip + mild brightness/contrast jitter on the mel tensor.
@@ -158,10 +158,10 @@ Checkpoints (`model_best.pth`, `birdclef_best_model.pth`, `model_last.pth`) and 
 
 ## Author
 
-**Daniel Soleimani** · [github.com/danielsolo707](https://github.com/danielsolo707)
+**Daniel Soleimani** Â· [github.com/danielsolo707](https://github.com/danielsolo707)
 
 ---
 
 ## License
 
-Code in this repository is provided for portfolio / educational use. BirdCLEF data remains under the competition’s own terms.
+MIT License — see [LICENSE](./LICENSE). Code is for portfolio / educational use. BirdCLEF competition data remains under the competition's own terms.
