@@ -66,7 +66,10 @@ def main() -> None:
         classes = json.load(f)
 
     model = load_checkpoint(
-        args.checkpoint, num_classes=int(cfg["NUM_CLASSES"]), device=device
+        args.checkpoint,
+        num_classes=int(cfg["NUM_CLASSES"]),
+        backbone_name=str(cfg.get("BACKBONE", "efficientnet_b0")),
+        device=device,
     )
 
     files = collect_audio(Path(args.audio))

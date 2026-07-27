@@ -1,6 +1,14 @@
 """Train BirdCLEF SED model (EfficientNet-B0 + attention pooling).
 
-Example (Kaggle / local data layout)::
+Training loop aligned with the Kaggle notebook that produced ``model.pth``
+(val macro ROC-AUC ≈ 0.8529):
+
+- stratified 80/20 split on ``primary_label``
+- precomputed mels preferred (``--mel-dir``)
+- AdamW (lr=1e-3, weight_decay=1e-5), CosineAnnealingLR, AMP
+- BCEWithLogitsLoss, macro ROC-AUC checkpointing
+
+Example::
 
     python -m src.train \\
         --config config.json \\
@@ -8,8 +16,6 @@ Example (Kaggle / local data layout)::
         --audio-dir /path/to/train_audio \\
         --mel-dir /path/to/precomputed_mels \\
         --output-dir runs/exp001
-
-Precomputed mels are optional but ~10× faster when available.
 """
 
 from __future__ import annotations
@@ -27,7 +33,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from .dataset import BirdCLEFDataset, load_label_maps
+from .dataset import BirdCLEFDataset, labels_from_metadata, load_label_maps
 from .model import BirdCLEFSED
 from .utils import load_config, multilabel_auc, project_root, resolve_device, save_json, set_seed
 
@@ -42,9 +48,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--epochs", type=int, default=None)
     p.add_argument("--batch-size", type=int, default=None)
     p.add_argument("--lr", type=float, default=None)
-    p.add_argument("--num-workers", type=int, default=2)
+    p.add_argument("--weight-decay", type=float, default=None)
+    p.add_argument(
+        "--num-workers",
+        type=int,
+        default=0,
+        help="DataLoader workers (0 matches Kaggle notebook)",
+    )
     p.add_argument("--val-ratio", type=float, default=0.2)
     p.add_argument("--seed", type=int, default=None)
+    p.add_argument(
+        "--build-labels-from-metadata",
+        action="store_true",
+        help="Ignore classes.json/label2id.json and build labels from this CSV",
+    )
     return p.parse_args()
 
 
@@ -75,17 +92,30 @@ def main() -> None:
     epochs = args.epochs if args.epochs is not None else int(cfg.get("EPOCHS", 10))
     batch_size = args.batch_size if args.batch_size is not None else int(cfg.get("BATCH_SIZE", 16))
     lr = args.lr if args.lr is not None else float(cfg.get("LR", 1e-3))
-    num_classes = int(cfg.get("NUM_CLASSES", 206))
+    weight_decay = (
+        args.weight_decay
+        if args.weight_decay is not None
+        else float(cfg.get("WEIGHT_DECAY", 1e-5))
+    )
+    backbone = str(cfg.get("BACKBONE", "efficientnet_b0"))
 
     set_seed(seed)
     device = resolve_device(cfg.get("DEVICE", "cuda"))
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    _, label2id = load_label_maps(root)
     df = pd.read_csv(args.metadata)
 
-    # Stratify on primary label when available
+    if args.build_labels_from_metadata or not (root / "label2id.json").exists():
+        classes, label2id = labels_from_metadata(df)
+        save_json(classes, out_dir / "classes.json")
+        save_json(label2id, out_dir / "label2id.json")
+    else:
+        classes, label2id = load_label_maps(root)
+
+    num_classes = len(label2id)
+    cfg = {**cfg, "NUM_CLASSES": num_classes}
+
     stratify = df["primary_label"] if "primary_label" in df.columns else None
     train_df, val_df = train_test_split(
         df, test_size=args.val_ratio, random_state=seed, stratify=stratify
@@ -106,17 +136,22 @@ def main() -> None:
         pin_memory=device.type == "cuda",
         drop_last=True,
     )
+    # Kaggle used batch_size * 2 for validation
     val_loader = DataLoader(
         val_ds,
-        batch_size=batch_size,
+        batch_size=batch_size * 2,
         shuffle=False,
         num_workers=args.num_workers,
         pin_memory=device.type == "cuda",
     )
 
-    model = BirdCLEFSED(num_classes=num_classes).to(device)
+    model = BirdCLEFSED(
+        num_classes=num_classes,
+        backbone_name=backbone,
+        pretrained=True,
+    ).to(device)
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
     scaler = GradScaler(enabled=device.type == "cuda")
 
@@ -125,8 +160,9 @@ def main() -> None:
     best_path = out_dir / "model_best.pth"
 
     print(f"Device: {device}")
+    print(f"Backbone: {backbone} | feature_dim={model.feature_dim}")
     print(f"Train: {len(train_ds)} | Val: {len(val_ds)} | Classes: {num_classes}")
-    print(f"Epochs: {epochs} | Batch: {batch_size} | LR: {lr}")
+    print(f"Epochs: {epochs} | Batch: {batch_size} | LR: {lr} | WD: {weight_decay}")
 
     for epoch in range(1, epochs + 1):
         model.train()
@@ -168,17 +204,22 @@ def main() -> None:
         if val_auc > best_auc:
             best_auc = val_auc
             torch.save(model.state_dict(), best_path)
-            print(f"  ↳ new best checkpoint → {best_path} (AUC={best_auc:.4f})")
+            # Also mirror Kaggle artifact name at output root
+            torch.save(model.state_dict(), out_dir / "birdclef_best_model.pth")
+            print(f"  -> new best checkpoint -> {best_path} (AUC={best_auc:.4f})")
 
-    # Also dump final weights
     torch.save(model.state_dict(), out_dir / "model_last.pth")
     save_json(
         {
             "best_val_auc": best_auc,
             "history": history,
             "config": cfg,
+            "backbone": backbone,
+            "weight_decay": weight_decay,
             "train_size": len(train_ds),
             "val_size": len(val_ds),
+            "num_classes": num_classes,
+            "source": "Aligned with Kaggle notebook danielsolo1770/notebookeb002d87be",
         },
         out_dir / "metrics.json",
     )

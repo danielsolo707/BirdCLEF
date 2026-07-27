@@ -53,7 +53,10 @@ def main() -> None:
     )
 
     model = load_checkpoint(
-        args.checkpoint, num_classes=int(cfg["NUM_CLASSES"]), device=device
+        args.checkpoint,
+        num_classes=int(cfg["NUM_CLASSES"]),
+        backbone_name=str(cfg.get("BACKBONE", "efficientnet_b0")),
+        device=device,
     )
 
     ys, ps = [], []

@@ -1,11 +1,21 @@
 """Precompute log-mel spectrograms for faster training (~10× speedup).
 
+Matches the Kaggle notebook precompute cell:
+- middle-crop audio, min-max log-mel in [0, 1], time width 256
+- cache names: ``subdir_file.npy`` (e.g. ``1139490_CSA36385.npy``)
+
 Example::
 
     python scripts/precompute_mels.py \\
         --audio-dir /path/to/train_audio \\
         --output-dir /path/to/mels \\
         --config config.json
+
+    # Optional: only files listed in train.csv
+    python scripts/precompute_mels.py \\
+        --audio-dir /path/to/train_audio \\
+        --output-dir /path/to/mels \\
+        --metadata /path/to/train.csv
 """
 
 from __future__ import annotations
@@ -15,13 +25,13 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 
-# Allow running as a script without installing the package
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.audio import load_audio, waveform_to_mel  # noqa: E402
+from src.audio import get_melspec, mel_cache_name  # noqa: E402
 from src.utils import load_config  # noqa: E402
 
 
@@ -30,6 +40,12 @@ def main() -> None:
     p.add_argument("--audio-dir", type=str, required=True)
     p.add_argument("--output-dir", type=str, required=True)
     p.add_argument("--config", type=str, default=str(ROOT / "config.json"))
+    p.add_argument(
+        "--metadata",
+        type=str,
+        default=None,
+        help="Optional train.csv; if set, only listed filenames are processed",
+    )
     args = p.parse_args()
 
     cfg = load_config(args.config)
@@ -37,25 +53,64 @@ def main() -> None:
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    exts = {".ogg", ".wav", ".mp3", ".flac", ".m4a"}
-    files = [f for f in audio_dir.rglob("*") if f.suffix.lower() in exts]
-    print(f"Found {len(files)} audio files")
+    if args.metadata:
+        df = pd.read_csv(args.metadata)
+        col = "filename" if "filename" in df.columns else None
+        if col is None:
+            for c in ("file", "audio_path", "path"):
+                if c in df.columns:
+                    col = c
+                    break
+        if col is None:
+            raise SystemExit("metadata CSV needs a filename column")
+        rel_paths = [str(x).replace("\\", "/") for x in df[col].tolist()]
+        jobs = []
+        for rel in rel_paths:
+            path = audio_dir / rel
+            if not path.exists():
+                matches = list(audio_dir.rglob(Path(rel).name))
+                path = matches[0] if matches else path
+            jobs.append((rel, path))
+    else:
+        exts = {".ogg", ".wav", ".mp3", ".flac", ".m4a"}
+        files = [f for f in audio_dir.rglob("*") if f.suffix.lower() in exts]
+        jobs = []
+        for path in files:
+            rel = path.relative_to(audio_dir).as_posix()
+            jobs.append((rel, path))
 
-    for path in tqdm(files):
-        y = load_audio(path, sr=cfg["SR"], duration=cfg["DURATION"])
-        mel = waveform_to_mel(
-            y,
-            sr=cfg["SR"],
-            n_fft=cfg["N_FFT"],
-            hop_length=cfg["HOP_LENGTH"],
-            n_mels=cfg["N_MELS"],
-            fmin=cfg["FMIN"],
-            fmax=cfg["FMAX"],
-            target_width=256,
-        )
-        np.save(out_dir / f"{path.stem}.npy", mel)
+    print(f"Found {len(jobs)} audio files")
+    tw = int(cfg.get("TARGET_WIDTH", 256))
+    saved = 0
+    skipped = 0
 
-    print(f"Saved mels to {out_dir}")
+    for rel, path in tqdm(jobs):
+        out_name = mel_cache_name(rel)
+        out_path = out_dir / out_name
+        if out_path.exists():
+            skipped += 1
+            continue
+        if not path.exists():
+            continue
+        try:
+            mel = get_melspec(
+                path,
+                sr=int(cfg["SR"]),
+                duration=float(cfg["DURATION"]),
+                n_fft=int(cfg["N_FFT"]),
+                hop_length=int(cfg["HOP_LENGTH"]),
+                n_mels=int(cfg["N_MELS"]),
+                fmin=int(cfg["FMIN"]),
+                fmax=int(cfg["FMAX"]),
+                target_width=tw,
+            )
+            np.save(out_path, mel.astype(np.float32))
+            saved += 1
+        except Exception:
+            # Skip corrupt files (same behavior as Kaggle notebook)
+            continue
+
+    print(f"Saved {saved} mels to {out_dir} (skipped existing: {skipped})")
 
 
 if __name__ == "__main__":

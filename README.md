@@ -6,31 +6,32 @@ Multi-label bird species classification from 5-second audio clips using an **Eff
 |---|---|
 | **Task** | Multi-label audio classification (206 species) |
 | **Best validation AUC** | **0.8529** |
-| **Stack** | PyTorch · timm · librosa |
+| **Stack** | PyTorch · timm · librosa · torchvision |
 | **Hardware** | Tesla T4 (Kaggle) |
 | **Checkpoint** | [`model.pth`](./model.pth) |
+| **Source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
 
 ---
 
 ## Why this project
 
-BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram-based CNN modeling. This repo packages the full training/evaluation/inference code used for a completed run (val AUC **0.8529**), plus the released weights.
+BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram-based CNN modeling. This repo packages the **training / evaluation / inference code aligned with the Kaggle notebook** that produced val AUC **0.8529**, plus the released weights.
 
 ---
 
 ## Architecture
 
 ```
-Audio (5s, 32 kHz)
+Audio (5s, 32 kHz, middle crop)
     │
     ▼
-Log-mel spectrogram  (1 × 128 × 256)
+Log-mel spectrogram  (1 × 128 × 256), min-max → [0, 1]
     │
     ▼
-EfficientNet-B0 backbone  (timm, in_chans=1, no classifier)
-    │  features: (B, 1280, H, W)
+EfficientNet-B0 backbone  (timm efficientnet_b0, in_chans=1, no classifier)
+    │  features: (B, feature_dim, H, W)  # typically 1280
     ▼
-SED head  (1×1 Conv 1280→256 → BN → ReLU → Dropout → 1×1 Conv → 206)
+SED head  (1×1 Conv → 256 → BN → ReLU → Dropout(0.3) → 1×1 Conv → 206)
     │  framewise logits: (B, 206, T)
     ▼
 Temporal attention pooling  (Linear 206→128 → Tanh → Linear → 1 + softmax over T)
@@ -40,9 +41,9 @@ Clip-level multi-label logits  (B, 206)  →  sigmoid → species probabilities
 ```
 
 **Loss:** `BCEWithLogitsLoss`  
-**Optimizer:** AdamW (lr=1e-3, weight decay=1e-4)  
+**Optimizer:** AdamW (lr=1e-3, weight decay=**1e-5**)  
 **Schedule:** CosineAnnealingLR over 10 epochs  
-**Other:** mixed precision (AMP), optional precomputed mels, light SpecAugment
+**Other:** mixed precision (AMP), precomputed mels, RandomHorizontalFlip + ColorJitter
 
 ---
 
@@ -60,9 +61,9 @@ BirdCLEF/
 ├── scripts/
 │   └── precompute_mels.py    # optional: cache mels as .npy
 └── src/
-    ├── model.py              # BirdCLEFSED (matches model.pth)
-    ├── audio.py              # mel extraction
-    ├── dataset.py            # multi-label Dataset
+    ├── model.py              # BirdCLEFSED / BirdSEDModel (matches model.pth)
+    ├── audio.py              # mel extraction (Kaggle get_melspec)
+    ├── dataset.py            # multi-label Dataset + augs
     ├── train.py              # full training loop
     ├── evaluate.py           # ROC-AUC evaluation
     ├── inference.py          # single-file / folder prediction
@@ -119,10 +120,11 @@ python -m src.evaluate \
 ### Train (optional — weights already provided)
 
 ```bash
-# Optional speedup: precompute mels once
+# Optional speedup: precompute mels once (~10× faster epochs)
 python scripts/precompute_mels.py \
   --audio-dir path/to/train_audio \
-  --output-dir path/to/mels
+  --output-dir path/to/mels \
+  --metadata path/to/train.csv
 
 python -m src.train \
   --config config.json \
@@ -132,16 +134,16 @@ python -m src.train \
   --output-dir runs/exp001
 ```
 
-Checkpoints and `metrics.json` are written under `--output-dir`.
+Checkpoints (`model_best.pth`, `birdclef_best_model.pth`, `model_last.pth`) and `metrics.json` are written under `--output-dir`.
 
 ---
 
 ## Design notes
 
 - **SED + attention** keeps frame-level structure instead of global pooling only — better for short, sparse bird calls.
-- **1-channel EfficientNet** reuses a strong ImageNet inductive bias on spectrograms without treating RGB as meaningful.
-- **Precomputed mels** trade disk for a large wall-clock win during multi-epoch training.
-- **SpecAugment-style masks** (train only) improve robustness to frequency/time dropout patterns.
+- **1-channel EfficientNet** reuses a strong ImageNet inductive bias on spectrograms.
+- **Precomputed mels** trade disk for a large wall-clock win during multi-epoch training (Kaggle cache naming: `folder_file.npy`).
+- **Train augs** match the notebook: horizontal flip + mild brightness/contrast jitter on the mel tensor.
 
 ---
 

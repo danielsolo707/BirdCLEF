@@ -6,6 +6,10 @@ __pycache__/
 venv/
 .env
 
+# Local scratch / pulled notebook dumps
+.tmp_kaggle/
+*.ipynb
+
 # Training artifacts (keep only the published checkpoint at repo root)
 runs/
 outputs/
