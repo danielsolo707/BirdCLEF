@@ -6,28 +6,25 @@
 
 ## What this folder is
 
-Immutable snapshot of the **first portfolio baseline** before accuracy / evaluation upgrades.
+Results / run card of the **first portfolio baseline** before accuracy / evaluation upgrades.
 
-- Living code stays organized under `src/`, `configs/`, `labels/`, `models/`.
-- This directory is a **run freeze**: checkpoint + config + label maps + metrics for honest before/after comparison.
+- Living code stays organized under `src/`, `v1/` `v2/` `v3/`, `labels/`, `models/`.
+- This directory holds the v1 run summary + reproducibility card.
+- The checkpoint itself lives in `models/v1/model.pth` (no duplicates kept).
 
 ## Contents
 
 | File | Role |
 |------|------|
-| `model.pth` | Best checkpoint from the Kaggle T4 run |
-| `config.json` | Audio + training hyperparameters used for this run |
-| `classes.json` | 206 species label list |
-| `label2id.json` | Label → class index map |
 | `training_summary.json` | Machine-readable run summary |
-| `REPRODUCIBILITY.md` | Human-readable card for this run only |
+| `REPRODUCIBILITY.md` | Human-readable card for this run |
 | `NOTES.md` | This file |
 
 ## Checkpoint integrity
 
 | Field | Value |
 |-------|--------|
-| File | `model.pth` |
+| File | `models/v1/model.pth` |
 | Size (bytes) | 17,971,077 |
 | SHA256 | `775CE724E2DC08BAC033FC8E1C23957995B641171BAE0DCE58106C4C51E7FC74` |
 
@@ -56,16 +53,14 @@ From repo root (paths relative to `BirdCLEF/`):
 
 ```bash
 python -m src.evaluate \
-  --checkpoint results/artifacts/v1_baseline_auc08529/model.pth \
-  --config results/artifacts/v1_baseline_auc08529/config.json \
+  --checkpoint models/v1/model.pth \
+  --config v1/config.json \
   --metadata path/to/val_or_train.csv \
   --audio-dir path/to/train_audio
 ```
 
-`models/v1/model.pth` is the same weights at freeze time; prefer this freeze path when comparing against future `results/artifacts/v2_*` runs.
-
 ## Policy
 
 - **Do not overwrite** files in this folder when training improves.  
-- New experiments → `artifacts/v2_.../` or `runs/<exp_id>/`.  
+- New experiments → `results/v2/`, `results/v3/` or `runs/<exp_id>/`.  
 - Only replace `models/v1/model.pth` when a new run is deliberately promoted as the public “best” checkpoint.

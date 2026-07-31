@@ -1,9 +1,19 @@
-# Reproducibility card — v1 baseline (AUC 0.8529)
+# Reproducibility card — BirdCLEF SED
 
-Frozen artifact set for the first published BirdCLEF SED outcome.  
-Parent portfolio card (living docs): [`../../results/REPRODUCIBILITY.md`](../../results/REPRODUCIBILITY.md)
+## Versioning
 
-## Published run
+| Run | Location | Notes |
+|-----|----------|--------|
+| **v1 baseline (frozen)** | [`./NOTES.md`](./NOTES.md) | First published outcome; do not overwrite |
+| Living published checkpoint | [`../models/v1/model.pth`](../models/v1/model.pth) | Same weights as v1 until a newer run is promoted |
+| Living config (v1) | [`../v1/config.json`](../v1/config.json) | |
+| Labels | [`../labels/`](../labels/) | `classes.json`, `label2id.json` |
+| v2 results | [`../results/v2/`](../results/v2/) | 0.8401 — did not beat v1 |
+| v3 results | [`../results/v3/`](../results/v3/) | ready for next run |
+
+Git tag (local until push): **`v1.0.0`**
+
+## Published run (shipped `models/v1/model.pth` = v1)
 
 | Field | Value |
 |-------|--------|
@@ -24,8 +34,7 @@ Parent portfolio card (living docs): [`../../results/REPRODUCIBILITY.md`](../../
 | Batch size | 16 (val loader ×2) |
 | Seed | 42 (local training script default) |
 | Source notebook | https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be |
-| Checkpoint | [`model.pth`](./model.pth) |
-| Config snapshot | [`config.json`](./config.json) |
+| Config snapshot | [`../v1/config.json`](../v1/config.json) |
 | Training summary | [`training_summary.json`](./training_summary.json) |
 | Checkpoint SHA256 | `775CE724E2DC08BAC033FC8E1C23957995B641171BAE0DCE58106C4C51E7FC74` |
 
@@ -44,17 +53,19 @@ Parent portfolio card (living docs): [`../../results/REPRODUCIBILITY.md`](../../
 
 ## How to re-run evaluation
 
-With competition data locally, from repo root:
+With competition data locally:
 
 ```bash
 python -m src.evaluate \
-  --checkpoint results/artifacts/v1_baseline_auc08529/model.pth \
-  --config results/artifacts/v1_baseline_auc08529/config.json \
+  --checkpoint models/v1/model.pth \
+  --config v1/config.json \
   --metadata path/to/val_or_train.csv \
   --audio-dir path/to/train_audio
 ```
 
-Re-training with current root code produces **new** checkpoints under `runs/` (or future `artifacts/v2_*`) and will not bit-match this freeze unless the full Kaggle environment, data order, and seeds match.
+Re-training produces **new** checkpoints under `runs/` (or future `results/v3/…`)
+and will not bit-match `models/v1/model.pth` / the v1 freeze unless the full
+Kaggle environment, data order, and seeds match.
 
 ## What is *not* claimed
 

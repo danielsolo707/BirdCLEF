@@ -61,22 +61,16 @@ BirdCLEF/
 │   ├── classes.json
 │   └── label2id.json
 │
-├── models/                   # published checkpoints
-│   └── v1/
-│       └── model.pth         # v1 best (val AUC 0.8529)
+├── models/                   # per-version checkpoints
+│   ├── README.md
+│   ├── v1/model.pth          # v1 best (val AUC 0.8529)
+│   ├── v2/                   # v2 checkpoints (empty)
+│   └── v3/                   # v3 checkpoints (empty — ready)
 │
-├── results/                  # run cards + frozen experiment snapshots
-│   ├── training_summary.json
-│   ├── REPRODUCIBILITY.md
-│   └── artifacts/            # frozen snapshots (do not overwrite)
-│       └── v1_baseline_auc08529/
-│
-├── docs/                     # guides + top-5 solution writeups (local reference)
-│   ├── V2_TRAINING.md
-│   ├── V3_PLAN.md            # solution comparison + why 4th place
-│   ├── V3_TRAINING.md        # v3 recipe
-│   ├── interview/            # local-only interview prep (gitignored)
-│   └── writeups/             # 1st-5th place solutions + 4th-place code
+├── results/                  # per-version run results
+│   ├── v1/                   # training_summary.json + REPRODUCIBILITY.md + NOTES.md
+│   ├── v2/                   # v2 results (0.8401 — did not beat v1)
+│   └── v3/                   # v3 results (empty — ready)
 │
 └── data/                     # local data only (gitignored except README)
     └── README.md
@@ -121,9 +115,9 @@ Audio (5s, 32 kHz, middle crop)
 | Validation | 5,713 | **Macro ROC-AUC = 0.8529** |
 | Total labeled clips | 28,564 | 206 species |
 
-- Summary: [`results/training_summary.json`](./results/training_summary.json)
-- Reproducibility: [`results/REPRODUCIBILITY.md`](./results/REPRODUCIBILITY.md)
-- Frozen pack: [`results/artifacts/v1_baseline_auc08529/`](./results/artifacts/v1_baseline_auc08529/)
+- Summary: [`results/v1/training_summary.json`](./results/v1/training_summary.json)
+- Reproducibility: [`results/v1/REPRODUCIBILITY.md`](./results/v1/REPRODUCIBILITY.md)
+- Run notes: [`results/v1/NOTES.md`](./results/v1/NOTES.md)
 
 **Metric note:** macro ROC-AUC averages per-species ranking quality. It is **not** accuracy at a fixed threshold.
 
@@ -231,6 +225,6 @@ python -m src.precompute_mels \
 1. **SED + attention** — bird calls are sparse in time; attention focuses useful frames.  (v3: PANNs-style `AttBlock`)
 2. **Precomputed mels** — large speedup for multi-epoch training.  (v3: power-mel 256×512, db at load)
 3. **Min-max log-mel in [0, 1] + middle crop** — train/serve parity with the notebook that produced `models/v1/model.pth`.  (v3: 10 s random window + `power_to_db`)
-4. **Per-version folders (`v1/`, `v2/`, `v3/`)** — shared library lives in `src/`; each version keeps its train entry point, config, and tools together.
-5. **`results/artifacts/` freezes** — immutable snapshots for honest v1 vs v2 comparison.
+4. **Per-version folders (`v1/`, `v2/`, `v3/`)** — shared library lives in `src/`; each version keeps its train entry point, config, and tools together. Checkpoints → `models/vN/`, run results → `results/vN/`.
+5. **`results/v1|v2|v3/` freezes** — immutable per-version run cards for honest comparison; no duplicated files.
 6. **v3 loss = Soft AUC** (4th-place trick) — optimizes the competition metric directly, overfitting-resistant, supports soft labels for semi-supervised learning.

@@ -37,7 +37,7 @@
   ],
   "precomputed_mels": true,
   "mel_cache_naming": "path/with/slashes.ogg → path_with_slashes.npy",
-  "checkpoint": "model.pth",
+  "checkpoint": "models/v1/model.pth",
   "notes": [
     "Training code in this repo is aligned with the Kaggle notebook that produced model.pth.",
     "Mel spectrograms were precomputed offline for ~10x training speedup.",

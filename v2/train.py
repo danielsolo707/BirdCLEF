@@ -394,7 +394,7 @@ def main() -> None:
 
     print(f"\nDone. Best validation AUC: {best_auc:.4f}")
     print(f"Artifacts written to: {out_dir}")
-    print("Upload best weights + metrics.json when you freeze artifacts/v2_* locally.")
+    print("Upload best weights + metrics.json when you freeze results/v2_* locally.")
 
 
 if __name__ == "__main__":

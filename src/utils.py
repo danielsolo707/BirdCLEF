@@ -28,10 +28,6 @@ def models_dir() -> Path:
     return project_root() / "models"
 
 
-def artifacts_dir() -> Path:
-    return project_root() / "results" / "artifacts"
-
-
 def results_dir() -> Path:
     return project_root() / "results"
 

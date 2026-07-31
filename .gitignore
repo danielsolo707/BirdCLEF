@@ -31,10 +31,8 @@ mels/
 *.flac
 *.npy
 
-# Interview notes (local only)
-docs/interview/
-INTERVIEW_PRESENTATION.md
-INTERVIEW_PRESENTATION_FA.md
+# Local docs & notes (interview prep, solution writeups — local only)
+docs/
 
 # Notebooks / IDE
 .ipynb_checkpoints/
