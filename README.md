@@ -64,12 +64,12 @@ BirdCLEF/
 ├── models/                   # per-version checkpoints
 │   ├── README.md
 │   ├── v1/model.pth          # v1 best (val AUC 0.8529)
-│   ├── v2/                   # v2 checkpoints (empty)
+│   ├── v2/model_best.pth     # v2 best (0.8401) + model_last.pth
 │   └── v3/                   # v3 checkpoints (empty — ready)
 │
 ├── results/                  # per-version run results
 │   ├── v1/                   # training_summary.json + REPRODUCIBILITY.md + NOTES.md
-│   ├── v2/                   # v2 results (0.8401 — did not beat v1)
+│   ├── v2/                   # metrics.json + per_class_metrics.csv + config_used.json
 │   └── v3/                   # v3 results (empty — ready)
 │
 └── data/                     # local data only (gitignored except README)

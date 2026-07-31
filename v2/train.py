@@ -346,7 +346,6 @@ def main() -> None:
             best_auc = float(val_metrics["macro_roc_auc"])
             best_metrics = dict(val_metrics)
             torch.save(model.state_dict(), best_path)
-            torch.save(model.state_dict(), out_dir / "birdclef_v2_best_model.pth")
             print(f"  -> new best checkpoint (AUC={best_auc:.4f})")
 
             # per-class CSV for the best model
