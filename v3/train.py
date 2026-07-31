@@ -10,17 +10,17 @@ Recipe (see docs/V3_PLAN.md and docs/V3_TRAINING.md):
 
 Example (local RTX 4070, single fold)::
 
-    python -m src.train_v3 \\
-        --config configs/config_v3.json \\
+    python -m v3.train \\
+        --config v3/config.json \\
         --metadata path/to/train.csv \\
         --mel-dir path/to/mels_v3 \\
         --output-dir runs/v3_exp001 \\
         --fold 0 --folds 5 --batch-size 24
 
-With pseudo-labels (after running pseudo_label.py)::
+With pseudo-labels (after running v3.pseudo_label)::
 
-    python -m src.train_v3 \\
-        --config configs/config_v3.json \\
+    python -m v3.train \\
+        --config v3/config.json \\
         --metadata path/to/train.csv \\
         --semi-csv runs/pseudo/semi_chunks.csv \\
         --mel-dir path/to/mels_v3 \\
@@ -43,11 +43,11 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from .dataset import BirdCLEFDatasetV3, labels_from_metadata, load_label_maps
-from .losses import get_criterion
-from .metrics import compute_metrics, per_class_report, print_metrics
-from .model import BirdCLEFModelV3
-from .utils import (
+from src.dataset import BirdCLEFDatasetV3, labels_from_metadata, load_label_maps
+from src.losses import get_criterion
+from src.metrics import compute_metrics, per_class_report, print_metrics
+from src.model import BirdCLEFModelV3
+from src.utils import (
     default_config_path,
     labels_dir,
     load_config,

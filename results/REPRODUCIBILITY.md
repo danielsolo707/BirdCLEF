@@ -4,14 +4,14 @@
 
 | Run | Location | Notes |
 |-----|----------|--------|
-| **v1 baseline (frozen)** | [`../artifacts/v1_baseline_auc08529/`](../artifacts/v1_baseline_auc08529/) | First published outcome; do not overwrite |
-| Living published checkpoint | [`../models/model.pth`](../models/model.pth) | Same weights as v1 until a newer run is promoted |
-| Living config (v1) | [`../configs/config.json`](../configs/config.json) | |
+| **v1 baseline (frozen)** | [`../results/artifacts/v1_baseline_auc08529/`](../results/artifacts/v1_baseline_auc08529/) | First published outcome; do not overwrite |
+| Living published checkpoint | [`../models/v1/model.pth`](../models/v1/model.pth) | Same weights as v1 until a newer run is promoted |
+| Living config (v1) | [`../v1/config.json`](../v1/config.json) | |
 | Labels | [`../labels/`](../labels/) | `classes.json`, `label2id.json` |
 
 Git tag (local until push): **`v1.0.0`**
 
-## Published run (shipped `models/model.pth` = v1)
+## Published run (shipped `models/v1/model.pth` = v1)
 
 | Field | Value |
 |-------|--------|
@@ -32,7 +32,7 @@ Git tag (local until push): **`v1.0.0`**
 | Batch size | 16 (val loader ×2) |
 | Seed | 42 (local training script default) |
 | Source notebook | https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be |
-| Config snapshot | [`../configs/config.json`](../configs/config.json) or frozen [`../artifacts/v1_baseline_auc08529/config.json`](../artifacts/v1_baseline_auc08529/config.json) |
+| Config snapshot | [`../v1/config.json`](../v1/config.json) or frozen [`../results/artifacts/v1_baseline_auc08529/config.json`](../results/artifacts/v1_baseline_auc08529/config.json) |
 | Training summary | [`training_summary.json`](./training_summary.json) |
 | Checkpoint SHA256 | `775CE724E2DC08BAC033FC8E1C23957995B641171BAE0DCE58106C4C51E7FC74` |
 
@@ -55,8 +55,8 @@ With competition data locally:
 
 ```bash
 python -m src.evaluate \
-  --checkpoint models/model.pth \
-  --config configs/config.json \
+  --checkpoint models/v1/model.pth \
+  --config v1/config.json \
   --metadata path/to/val_or_train.csv \
   --audio-dir path/to/train_audio
 ```
@@ -65,13 +65,13 @@ Or the frozen v1 paths:
 
 ```bash
 python -m src.evaluate \
-  --checkpoint artifacts/v1_baseline_auc08529/model.pth \
-  --config artifacts/v1_baseline_auc08529/config.json \
+  --checkpoint results/artifacts/v1_baseline_auc08529/model.pth \
+  --config results/artifacts/v1_baseline_auc08529/config.json \
   --metadata path/to/val_or_train.csv \
   --audio-dir path/to/train_audio
 ```
 
-Re-training produces **new** checkpoints under `runs/` (or future `artifacts/v2_*`) and will not bit-match `models/model.pth` / the v1 freeze unless the full Kaggle environment, data order, and seeds match.
+Re-training produces **new** checkpoints under `runs/` (or future `results/artifacts/v2_*`) and will not bit-match `models/v1/model.pth` / the v1 freeze unless the full Kaggle environment, data order, and seeds match.
 
 ## What is *not* claimed
 

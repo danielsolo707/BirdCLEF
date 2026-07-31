@@ -6,12 +6,12 @@ Flow (aligned with the 4th/5th-place solutions):
   3. Keep 5 s chunks whose max class probability > ``--threshold``
   4. Write chunk power-mels into ``--mel-dir`` and a CSV of soft-label rows
      (``primary_label='__semi__'`` + a ``target`` column) consumable by
-     ``src.train_v3 --semi-csv``
+     ``v3.train --semi-csv``
 
 Example::
 
-    python -m src.pseudo_label \\
-        --config configs/config_v3.json \\
+    python -m v3.pseudo_label \\
+        --config v3/config.json \\
         --checkpoints runs/v3_exp001/model_fold0_best.pth,runs/v3_exp001/model_fold1_best.pth \\
         --soundscapes-dir /path/to/train_soundscapes \\
         --mel-dir data/mels_v3_semi \\
@@ -31,9 +31,9 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from .audio import get_melspec_v3, load_audio_v3, mel_cache_name
-from .model import load_checkpoint
-from .utils import default_config_path, labels_dir, load_config, resolve_device, save_json
+from src.audio import get_melspec_v3, load_audio_v3, mel_cache_name
+from src.model import load_checkpoint
+from src.utils import default_config_path, labels_dir, load_config, resolve_device, save_json
 
 
 def parse_args() -> argparse.Namespace:
@@ -79,7 +79,7 @@ def predict_soundscape(model, y: np.ndarray, cfg: dict, device, window_sec: floa
 
 def waveform_to_mel_np(seg: np.ndarray, cfg: dict) -> np.ndarray:
     """Power mel for a raw segment (target_time from cfg)."""
-    from .audio import waveform_to_mel_v3
+    from src.audio import waveform_to_mel_v3
 
     return waveform_to_mel_v3(
         seg,
@@ -183,7 +183,7 @@ def main() -> None:
     df = pd.DataFrame(rows)
     df.to_csv(out_csv, index=False)
     print(f"[pseudo] kept {n_kept} chunks ({len(sound_files)} soundscapes) → {out_csv}")
-    print(f"[pseudo] chunk mels in {mel_dir} | next: python -m src.train_v3 --semi-csv {out_csv}")
+    print(f"[pseudo] chunk mels in {mel_dir} | next: python -m v3.train --semi-csv {out_csv}")
 
     # metadata sidecar
     save_json(

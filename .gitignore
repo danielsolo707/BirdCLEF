@@ -10,10 +10,9 @@ venv/
 .tmp_kaggle/
 kaggle_upload/
 
-# Ignore ad-hoc notebooks, keep the official v2 Kaggle notebook
+# Ignore ad-hoc notebooks, keep the official version notebooks
 *.ipynb
-!notebooks/
-!notebooks/birdclef_v2_kaggle.ipynb
+!v2/kaggle.ipynb
 
 # Training run outputs (use artifacts/ for frozen releases)
 runs/

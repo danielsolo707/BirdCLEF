@@ -12,13 +12,13 @@ from training recipe, not a totally different network.
 
 Example (local)::
 
-    python -m src.train_v2 \\
-        --config configs/config_v2.json \\
+    python -m v2.train \\
+        --config v2/config.json \\
         --metadata path/to/train.csv \\
         --mel-dir path/to/mels \\
         --output-dir runs/v2_exp001
 
-On Kaggle: use notebooks/birdclef_v2_kaggle.ipynb (same logic, notebook cells).
+On Kaggle: use v2/kaggle.ipynb (same logic, notebook cells).
 """
 
 from __future__ import annotations
@@ -36,10 +36,10 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from tqdm import tqdm
 
-from .dataset import BirdCLEFDataset, build_target, labels_from_metadata, load_label_maps
-from .metrics import compute_metrics, per_class_report, print_metrics
-from .model import BirdCLEFSED
-from .utils import (
+from src.dataset import BirdCLEFDataset, build_target, labels_from_metadata, load_label_maps
+from src.metrics import compute_metrics, per_class_report, print_metrics
+from src.model import BirdCLEFSED
+from src.utils import (
     default_config_path,
     labels_dir,
     load_config,

@@ -17,7 +17,7 @@ def project_root() -> Path:
 
 
 def configs_dir() -> Path:
-    return project_root() / "configs"
+    return project_root()
 
 
 def labels_dir() -> Path:
@@ -29,7 +29,7 @@ def models_dir() -> Path:
 
 
 def artifacts_dir() -> Path:
-    return project_root() / "artifacts"
+    return project_root() / "results" / "artifacts"
 
 
 def results_dir() -> Path:
@@ -38,15 +38,15 @@ def results_dir() -> Path:
 
 def default_config_path(version: str = "v1") -> Path:
     if version in ("v3", "3"):
-        return configs_dir() / "config_v3.json"
+        return project_root() / "v3" / "config.json"
     if version in ("v2", "2"):
-        return configs_dir() / "config_v2.json"
-    return configs_dir() / "config.json"
+        return project_root() / "v2" / "config.json"
+    return project_root() / "v1" / "config.json"
 
 
 def default_checkpoint_path() -> Path:
     """Published best weights (v1 until a newer run is promoted)."""
-    return models_dir() / "model.pth"
+    return models_dir() / "v1" / "model.pth"
 
 
 def load_config(path: str | Path) -> dict:

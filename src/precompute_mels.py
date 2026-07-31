@@ -9,7 +9,7 @@ Example::
     python scripts/precompute_mels.py \\
         --audio-dir /path/to/train_audio \\
         --output-dir /path/to/mels \\
-        --config configs/config.json
+        --config v1/config.json
 
     # Optional: only files listed in train.csv
     python scripts/precompute_mels.py \\
@@ -21,18 +21,14 @@ Example::
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-
-from src.audio import get_melspec, mel_cache_name  # noqa: E402
-from src.utils import default_config_path, load_config  # noqa: E402
+from .audio import get_melspec, mel_cache_name
+from .utils import default_config_path, load_config
 
 
 def main() -> None:

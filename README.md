@@ -10,7 +10,7 @@ Multi-label bird species classification from 5-second audio clips using an **Eff
 | **v3 recipe** | 4th-place-style: Soft AUC loss · 10 s · power-mel 256×512 · AttBlock · semi-supervised (see `docs/V3_TRAINING.md`) |
 | **Stack** | PyTorch · timm · librosa · torchvision |
 | **Hardware** | Tesla T4 / T4×2 (Kaggle) · RTX 4070 (local) |
-| **Checkpoint** | [`models/model.pth`](./models/model.pth) |
+| **Checkpoint** | [`models/v1/model.pth`](./models/v1/model.pth) |
 | **Source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
 | **v2 Kaggle train** | [danielsolo1770/birdclef-v2-train](https://www.kaggle.com/code/danielsolo1770/birdclef-v2-train) |
 | **License** | [MIT](./LICENSE) |
@@ -25,55 +25,58 @@ BirdCLEF/
 ├── LICENSE
 ├── requirements.txt
 │
-├── configs/                  # hyperparameters
-│   ├── config.json           # v1 (matches shipped model)
-│   ├── config_v2.json        # v2 (underperformed v1)
-│   └── config_v3.json        # v3 (4th-place-style: SoftAUC + 10s + semi) — NEW
+├── src/                      # shared library (all versions import from here)
+│   ├── model.py              # BirdCLEFSED (v1/v2) + BirdCLEFModelV3 (bn0+AttBlock)
+│   ├── audio.py              # mel extraction (v1 log-mel + v3 power-mel)
+│   ├── dataset.py            # BirdCLEFDataset + BirdCLEFDatasetV3
+│   ├── losses.py             # AUCLoss / SoftAUCLoss / FocalBCELoss
+│   ├── metrics.py            # AUC / F1 / precision / recall
+│   ├── utils.py              # paths, configs, seeding
+│   ├── evaluate.py           # shared eval CLI
+│   ├── inference.py          # shared inference CLI (v1 + v3 overlap-TTA flags)
+│   ├── ensemble.py           # blend prediction CSVs
+│   └── precompute_mels.py    # v1/v2 log-mel cache (shared)
+│
+├── v1/                       # version 1 — EfficientNet-B0 SED baseline (AUC 0.8529)
+│   ├── train.py              # v1 training
+│   ├── config.json           # v1 hyperparameters
+│   └── __init__.py
+│
+├── v2/                       # version 2 — same model, better recipe (0.8401)
+│   ├── train.py              # v2 training
+│   ├── config.json           # v2 hyperparameters
+│   ├── kaggle.ipynb          # Kaggle notebook template
+│   ├── smoke_test.py         # fast local sanity
+│   └── __init__.py
+│
+├── v3/                       # version 3 — 4th-place-style recipe (Soft AUC + 10s + semi)
+│   ├── train.py              # v3 training
+│   ├── config.json           # v3 hyperparameters
+│   ├── pseudo_label.py       # pseudo-label train_soundscapes (Stage 2)
+│   ├── precompute_mels.py    # v3 power-mel cache
+│   ├── smoke_test.py         # v3 end-to-end sanity
+│   └── __init__.py
 │
 ├── labels/                   # class maps (206 species)
 │   ├── classes.json
 │   └── label2id.json
 │
 ├── models/                   # published checkpoints
-│   └── model.pth             # v1 best (val AUC 0.8529)
+│   └── v1/
+│       └── model.pth         # v1 best (val AUC 0.8529)
 │
-├── artifacts/                # frozen experiment snapshots (do not overwrite)
-│   └── v1_baseline_auc08529/
-│
-├── results/                  # human-readable run cards + summaries
+├── results/                  # run cards + frozen experiment snapshots
 │   ├── training_summary.json
-│   └── REPRODUCIBILITY.md
-│
-├── src/                      # Python package (train / eval / infer)
-│   ├── model.py              # v1 BirdCLEFSED + NEW v3 BirdCLEFModelV3 (bn0+AttBlock)
-│   ├── losses.py             # NEW: AUCLoss / SoftAUCLoss / FocalBCELoss
-│   ├── train.py              # v1 training
-│   ├── train_v2.py           # v2 training
-│   ├── train_v3.py           # v3 training (4th-place-style) — REWRITTEN
-│   ├── pseudo_label.py       # NEW: pseudo-label train_soundscapes (Stage 2)
-│   ├── evaluate.py
-│   ├── inference.py          # + overlap-TTA / smooth / post-process flags
-│   ├── ensemble.py           # NEW: blend prediction CSVs
-│   ├── dataset.py            # + NEW BirdCLEFDatasetV3 (10s, mixup, rare upsample)
-│   ├── audio.py              # + NEW v3 power-mel extraction
-│   ├── metrics.py
-│   └── utils.py
-│
-├── scripts/                  # one-off utilities
-│   ├── precompute_mels.py
-│   ├── precompute_mels_v3.py # NEW: v3 power-mel cache
-│   ├── smoke_test_v2.py
-│   └── smoke_test_v3.py      # NEW: v3 end-to-end sanity
-│
-├── notebooks/                # Kaggle / exploration notebooks
-│   ├── birdclef_v2_kaggle.ipynb
-│   └── (v3 notebook planned)
+│   ├── REPRODUCIBILITY.md
+│   └── artifacts/            # frozen snapshots (do not overwrite)
+│       └── v1_baseline_auc08529/
 │
 ├── docs/                     # guides + top-5 solution writeups (local reference)
 │   ├── V2_TRAINING.md
-│   ├── V3_PLAN.md            # NEW: solution comparison + why 4th place
-│   ├── V3_TRAINING.md        # NEW: v3 recipe
-│   └── writeups/             # NEW: 1st-5th place solutions + 4th-place code
+│   ├── V3_PLAN.md            # solution comparison + why 4th place
+│   ├── V3_TRAINING.md        # v3 recipe
+│   ├── interview/            # local-only interview prep (gitignored)
+│   └── writeups/             # 1st-5th place solutions + 4th-place code
 │
 └── data/                     # local data only (gitignored except README)
     └── README.md
@@ -120,7 +123,7 @@ Audio (5s, 32 kHz, middle crop)
 
 - Summary: [`results/training_summary.json`](./results/training_summary.json)
 - Reproducibility: [`results/REPRODUCIBILITY.md`](./results/REPRODUCIBILITY.md)
-- Frozen pack: [`artifacts/v1_baseline_auc08529/`](./artifacts/v1_baseline_auc08529/)
+- Frozen pack: [`results/artifacts/v1_baseline_auc08529/`](./results/artifacts/v1_baseline_auc08529/)
 
 **Metric note:** macro ROC-AUC averages per-species ranking quality. It is **not** accuracy at a fixed threshold.
 
@@ -145,8 +148,8 @@ pip install -r requirements.txt
 ```bash
 python -m src.inference \
   --audio path/to/clip.ogg \
-  --checkpoint models/model.pth \
-  --config configs/config.json \
+  --checkpoint models/v1/model.pth \
+  --config v1/config.json \
   --top-k 5
 ```
 
@@ -154,8 +157,8 @@ python -m src.inference \
 
 ```bash
 python -m src.evaluate \
-  --checkpoint models/model.pth \
-  --config configs/config.json \
+  --checkpoint models/v1/model.pth \
+  --config v1/config.json \
   --metadata path/to/val.csv \
   --audio-dir path/to/train_audio
 ```
@@ -163,8 +166,8 @@ python -m src.evaluate \
 ### Train v1
 
 ```bash
-python -m src.train \
-  --config configs/config.json \
+python -m v1.train \
+  --config v1/config.json \
   --metadata path/to/train.csv \
   --audio-dir path/to/train_audio \
   --mel-dir path/to/mels \
@@ -174,8 +177,8 @@ python -m src.train \
 ### Train v2 (stronger recipe)
 
 ```bash
-python -m src.train_v2 \
-  --config configs/config_v2.json \
+python -m v2.train \
+  --config v2/config.json \
   --metadata path/to/train.csv \
   --mel-dir path/to/mels \
   --output-dir runs/v2_exp
@@ -187,19 +190,19 @@ See [`docs/V2_TRAINING.md`](./docs/V2_TRAINING.md) for the full v2 guide (also r
 
 ```bash
 # 1. precompute v3 power-mels (10 s, 256×512)
-python scripts/precompute_mels_v3.py \
+python -m v3.precompute_mels \
   --audio-dir path/to/train_audio --output-dir path/to/mels_v3 \
-  --config configs/config_v3.json
+  --config v3/config.json
 
 # 2. train (single fold)
-python -m src.train_v3 \
-  --config configs/config_v3.json \
+python -m v3.train \
+  --config v3/config.json \
   --metadata path/to/train.csv --mel-dir path/to/mels_v3 \
   --output-dir runs/v3_exp001 --fold 0 --folds 5
 
 # 3. (optional Stage 2) pseudo-label soundscapes, then re-train with --semi-csv
-python -m src.pseudo_label \
-  --config configs/config_v3.json \
+python -m v3.pseudo_label \
+  --config v3/config.json \
   --checkpoints runs/v3_exp001/model_fold0_best.pth \
   --soundscapes-dir path/to/train_soundscapes \
   --mel-dir path/to/mels_v3_semi --output-csv runs/pseudo/semi_chunks.csv
@@ -207,18 +210,18 @@ python -m src.pseudo_label \
 # 4. overlap-TTA inference with a v3 checkpoint
 python -m src.inference \
   --audio path/to/soundscape.ogg --checkpoint runs/v3_exp001/model_fold0_best.pth \
-  --config configs/config_v3.json --model-version v3 --overlap --smooth --postprocess
+  --config v3/config.json --model-version v3 --overlap --smooth --postprocess
 ```
 
 See [`docs/V3_TRAINING.md`](./docs/V3_TRAINING.md) for the full v3 guide.
 
-### Precompute mels
+### Precompute mels (v1/v2)
 
 ```bash
-python scripts/precompute_mels.py \
+python -m src.precompute_mels \
   --audio-dir path/to/train_audio \
   --output-dir path/to/mels \
-  --config configs/config.json
+  --config v1/config.json
 ```
 
 ---
@@ -227,7 +230,7 @@ python scripts/precompute_mels.py \
 
 1. **SED + attention** — bird calls are sparse in time; attention focuses useful frames.  (v3: PANNs-style `AttBlock`)
 2. **Precomputed mels** — large speedup for multi-epoch training.  (v3: power-mel 256×512, db at load)
-3. **Min-max log-mel in [0, 1] + middle crop** — train/serve parity with the notebook that produced `models/model.pth`.  (v3: 10 s random window + `power_to_db`)
-4. **Configs + label maps in folders** — no magic paths buried only in notebooks.
-5. **`artifacts/` freezes** — immutable snapshots for honest v1 vs v2 comparison.
+3. **Min-max log-mel in [0, 1] + middle crop** — train/serve parity with the notebook that produced `models/v1/model.pth`.  (v3: 10 s random window + `power_to_db`)
+4. **Per-version folders (`v1/`, `v2/`, `v3/`)** — shared library lives in `src/`; each version keeps its train entry point, config, and tools together.
+5. **`results/artifacts/` freezes** — immutable snapshots for honest v1 vs v2 comparison.
 6. **v3 loss = Soft AUC** (4th-place trick) — optimizes the competition metric directly, overfitting-resistant, supports soft labels for semi-supervised learning.

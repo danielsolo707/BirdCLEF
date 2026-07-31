@@ -48,8 +48,8 @@ With competition data locally, from repo root:
 
 ```bash
 python -m src.evaluate \
-  --checkpoint artifacts/v1_baseline_auc08529/model.pth \
-  --config artifacts/v1_baseline_auc08529/config.json \
+  --checkpoint results/artifacts/v1_baseline_auc08529/model.pth \
+  --config results/artifacts/v1_baseline_auc08529/config.json \
   --metadata path/to/val_or_train.csv \
   --audio-dir path/to/train_audio
 ```

@@ -56,16 +56,16 @@ From repo root (paths relative to `BirdCLEF/`):
 
 ```bash
 python -m src.evaluate \
-  --checkpoint artifacts/v1_baseline_auc08529/model.pth \
-  --config artifacts/v1_baseline_auc08529/config.json \
+  --checkpoint results/artifacts/v1_baseline_auc08529/model.pth \
+  --config results/artifacts/v1_baseline_auc08529/config.json \
   --metadata path/to/val_or_train.csv \
   --audio-dir path/to/train_audio
 ```
 
-`models/model.pth` is the same weights at freeze time; prefer this freeze path when comparing against future `artifacts/v2_*` runs.
+`models/v1/model.pth` is the same weights at freeze time; prefer this freeze path when comparing against future `results/artifacts/v2_*` runs.
 
 ## Policy
 
 - **Do not overwrite** files in this folder when training improves.  
 - New experiments → `artifacts/v2_.../` or `runs/<exp_id>/`.  
-- Only replace `models/model.pth` when a new run is deliberately promoted as the public “best” checkpoint.
+- Only replace `models/v1/model.pth` when a new run is deliberately promoted as the public “best” checkpoint.

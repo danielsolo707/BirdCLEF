@@ -52,19 +52,19 @@ Optional Stage 2 (semi-supervised):
 
 | File | Action |
 |---|---|
-| `configs/config_v3.json` | NEW v3 hyperparameters |
-| `src/losses.py` | NEW: AUCLoss, SoftAUCLoss, FocalBCELoss |
-| `src/model.py` | ADD BirdCLEFModelV3 (bn0 + channel smoothing + AttBlock); keep BirdCLEFSED for v1/v2 |
-| `src/audio.py` | ADD v3 mel extraction (power mel + resize, 10 s) |
-| `src/dataset.py` | ADD v3 dataset (random 10 s, mixup, rare upsampling, soft labels) |
-| `src/train_v3.py` | NEW v3 trainer (replaces deleted v3) |
-| `src/pseudo_label.py` | NEW: pseudo-label soundscapes with a teacher ensemble |
-| `src/inference.py` | ADD overlap-TTA + smoothing + post-processing flags |
-| `src/ensemble.py` | NEW: average/weighted blend of model predictions |
-| `scripts/precompute_mels_v3.py` | NEW: v3 mel cache |
-| `scripts/smoke_test_v3.py` | NEW: fast local sanity (tiny synthetic data) |
-| `docs/V3_TRAINING.md` | NEW guide |
-| `README.md` | update |
+| `src/train_v2.py` → `v2/train.py` | v2 training (same model, better recipe) |
+| `src/train_v3.py` → `v3/train.py` | v3 training (4th-place-style) |
+| `src/pseudo_label.py` → `v3/pseudo_label.py` | v3 semi-supervised pseudo-labeling |
+| `scripts/precompute_mels.py` → `src/precompute_mels.py` | v1/v2 mel cache (shared) |
+| `scripts/precompute_mels_v3.py` → `v3/precompute_mels.py` | v3 power-mel cache |
+| `scripts/smoke_test_v2.py` → `v2/smoke_test.py` | v2 sanity |
+| `scripts/smoke_test_v3.py` → `v3/smoke_test.py` | v3 sanity |
+| `configs/config.json` → `v1/config.json` | v1 hyperparameters |
+| `configs/config_v2.json` → `v2/config.json` | v2 hyperparameters |
+| `configs/config_v3.json` → `v3/config.json` | v3 hyperparameters |
+| `notebooks/birdclef_v2_kaggle.ipynb` → `v2/kaggle.ipynb` | v2 Kaggle notebook |
+| `models/model.pth` → `models/v1/model.pth` | v1 checkpoint |
+| `artifacts/` → `results/artifacts/` | frozen experiment snapshots |
 
 ## 5. Expected gains (from 4th place writeup)
 

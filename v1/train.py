@@ -10,8 +10,8 @@ Training loop aligned with the Kaggle notebook that produced ``model.pth``
 
 Example::
 
-    python -m src.train \\
-        --config configs/config.json \\
+    python -m v1.train \\
+        --config v1/config.json \\
         --metadata /path/to/train.csv \\
         --audio-dir /path/to/train_audio \\
         --mel-dir /path/to/precomputed_mels \\
@@ -33,9 +33,9 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from .dataset import BirdCLEFDataset, labels_from_metadata, load_label_maps
-from .model import BirdCLEFSED
-from .utils import (
+from src.dataset import BirdCLEFDataset, labels_from_metadata, load_label_maps
+from src.model import BirdCLEFSED
+from src.utils import (
     default_config_path,
     labels_dir,
     load_config,

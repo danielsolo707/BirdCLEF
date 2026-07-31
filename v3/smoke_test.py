@@ -25,7 +25,7 @@ from src.audio import get_melspec_v3  # noqa: E402
 from src.dataset import BirdCLEFDatasetV3  # noqa: E402
 from src.losses import SoftAUCLoss, FocalBCELoss  # noqa: E402
 from src.model import BirdCLEFModelV3, load_checkpoint  # noqa: E402
-from src.train_v3 import evaluate_full  # noqa: E402
+from v3.train import evaluate_full  # noqa: E402
 from src.utils import save_json, set_seed  # noqa: E402
 
 SR = 32000

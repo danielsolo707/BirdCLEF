@@ -9,7 +9,7 @@ Example::
     python scripts/precompute_mels_v3.py \\
         --audio-dir path/to/train_audio \\
         --output-dir data/mels_v3 \\
-        --config configs/config_v3.json
+        --config v3/config.json
 """
 
 from __future__ import annotations

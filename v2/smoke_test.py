@@ -33,7 +33,7 @@ def test_spec_augment() -> None:
 
 
 def test_build_transform() -> None:
-    cfg = load_config(ROOT / "configs" / "config_v2.json")
+    cfg = load_config(ROOT / "v2" / "config.json")
     t = build_train_transform(cfg)
     x = torch.rand(1, 128, 256)
     y = t(x)

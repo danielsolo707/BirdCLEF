@@ -18,7 +18,7 @@ for the full comparison and rationale.
 | Rare classes | pos_weight only | **upsampling to ≥100 samples/class** |
 | Mixup | none | **spec mixup** (α=0.5, p=1.0) |
 | CV | single 80/20 split | **k-fold StratifiedKFold** (default 1, recommend 5) |
-| Semi-supervised | none | **pseudo-labeled train_soundscapes** via `src.pseudo_label` |
+| Semi-supervised | none | **pseudo-labeled train_soundscapes** via `v3.pseudo_label` |
 | Inference | single clip | **overlap-TTA + smoothing + post-processing** flags |
 
 ## Pipeline
@@ -46,25 +46,25 @@ Inference: --overlap (sliding 10 s window, 2.5 s stride) + --smooth + --postproc
 
 ```bash
 # 1. precompute mels (once)
-python scripts/precompute_mels_v3.py \
-  --audio-dir data/train_audio --output-dir data/mels_v3 --config configs/config_v3.json
+python -m v3.precompute_mels \
+  --audio-dir data/train_audio --output-dir data/mels_v3 --config v3/config.json
 
 # 2. train (single fold, small batch for 8 GB)
-python -m src.train_v3 \
-  --config configs/config_v3.json \
+python -m v3.train \
+  --config v3/config.json \
   --metadata data/train.csv --mel-dir data/mels_v3 \
   --output-dir runs/v3_exp001 --fold 0 --folds 5 --batch-size 24
 
 # 3. pseudo-label soundscapes (after stage 1 finishes)
-python -m src.pseudo_label \
-  --config configs/config_v3.json \
+python -m v3.pseudo_label \
+  --config v3/config.json \
   --checkpoints runs/v3_exp001/model_fold0_best.pth,runs/v3_exp001/model_fold1_best.pth \
   --soundscapes-dir data/train_soundscapes \
   --mel-dir data/mels_v3_semi --output-csv runs/pseudo/semi_chunks.csv --threshold 0.3
 
 # 4. re-train with pseudo-labels
-python -m src.train_v3 \
-  --config configs/config_v3.json \
+python -m v3.train \
+  --config v3/config.json \
   --metadata data/train.csv --semi-csv runs/pseudo/semi_chunks.csv \
   --mel-dir data/mels_v3 --output-dir runs/v3_semi_exp001 --fold 0 --folds 5
 ```
@@ -87,11 +87,11 @@ python -m src.train_v3 \
 ## Sanity
 
 ```bash
-python scripts/smoke_test_v3.py        # tiny synthetic end-to-end on local GPU
+python v3/smoke_test.py        # tiny synthetic end-to-end on local GPU
 ```
 
 ## Result tracking
 
 - Checkpoints per fold: `runs/<exp>/model_fold{fold}_best.pth`
 - Metrics: `runs/<exp>/metrics.json` (mean fold AUC vs v1 baseline 0.8529)
-- Promote `models/model.pth` **only if** best AUC > 0.8529
+- Promote `models/v1/model.pth` **only if** best AUC > 0.8529

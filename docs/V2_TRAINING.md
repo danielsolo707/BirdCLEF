@@ -25,27 +25,26 @@
 
 | Path | Role |
 |------|------|
-| `configs/config_v2.json` | v2 hyperparameters |
-| `src/train_v2.py` | local CLI training |
+| `v2/config.json` | v2 hyperparameters |
+| `v2/train.py` | local CLI training |
 | `src/metrics.py` | AUC / F1 / precision / recall |
 | `src/dataset.py` | SpecAugment + cfg transforms |
-| `src/evaluate.py` | full metric evaluation |
-| `notebooks/birdclef_v2_kaggle.ipynb` | Kaggle notebook template |
-| `scripts/smoke_test_v2.py` | fast local sanity checks |
-| `artifacts/v1_baseline_auc08529/` | frozen first outcome (do not overwrite) |
-| `models/model.pth` | published v1 checkpoint |
+| `v2/kaggle.ipynb` | Kaggle notebook template |
+| `v2/smoke_test.py` | fast local sanity checks |
+| `results/artifacts/v1_baseline_auc08529/` | frozen first outcome (do not overwrite) |
+| `models/v1/model.pth` | published v1 checkpoint |
 
 ## Local smoke test (no full train)
 
 ```bash
-python scripts/smoke_test_v2.py
+python v2/smoke_test.py
 ```
 
 ## Local train (if you have data)
 
 ```bash
-python -m src.train_v2 \
-  --config configs/config_v2.json \
+python -m v2.train \
+  --config v2/config.json \
   --metadata path/to/train.csv \
   --mel-dir path/to/mels \
   --output-dir runs/v2_exp001
@@ -62,11 +61,11 @@ When finished, download:
 - `metrics.json`
 - `per_class_metrics.csv`
 
-Then freeze under `artifacts/v2_auc0xxxx/` and compare to v1.
+Then freeze under `results/artifacts/v2_auc0xxxx/` and compare to v1.
 
 ## After a good run
 
-Only replace `models/model.pth` if v2 **beats 0.8529** on a fair comparison.
+Only replace `models/v1/model.pth` if v2 **beats 0.8529** on a fair comparison.
 
 ## Honest note
 
