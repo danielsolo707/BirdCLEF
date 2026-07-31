@@ -8,7 +8,7 @@
 
 Immutable snapshot of the **first portfolio baseline** before accuracy / evaluation upgrades.
 
-- Living training code stays at the **repo root** (`src/`, root `config.json`, root `model.pth`).
+- Living code stays organized under `src/`, `configs/`, `labels/`, `models/`.
 - This directory is a **run freeze**: checkpoint + config + label maps + metrics for honest before/after comparison.
 
 ## Contents
@@ -62,10 +62,10 @@ python -m src.evaluate \
   --audio-dir path/to/train_audio
 ```
 
-Root `model.pth` is the same file at freeze time; prefer this path when comparing against future `artifacts/v2_*` runs.
+`models/model.pth` is the same weights at freeze time; prefer this freeze path when comparing against future `artifacts/v2_*` runs.
 
 ## Policy
 
 - **Do not overwrite** files in this folder when training improves.  
 - New experiments → `artifacts/v2_.../` or `runs/<exp_id>/`.  
-- Only replace root `model.pth` when a new run is deliberately promoted as the public “best” checkpoint.
+- Only replace `models/model.pth` when a new run is deliberately promoted as the public “best” checkpoint.

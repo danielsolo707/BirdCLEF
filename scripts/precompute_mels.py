@@ -9,7 +9,7 @@ Example::
     python scripts/precompute_mels.py \\
         --audio-dir /path/to/train_audio \\
         --output-dir /path/to/mels \\
-        --config config.json
+        --config configs/config.json
 
     # Optional: only files listed in train.csv
     python scripts/precompute_mels.py \\
@@ -32,14 +32,14 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.audio import get_melspec, mel_cache_name  # noqa: E402
-from src.utils import load_config  # noqa: E402
+from src.utils import default_config_path, load_config  # noqa: E402
 
 
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--audio-dir", type=str, required=True)
     p.add_argument("--output-dir", type=str, required=True)
-    p.add_argument("--config", type=str, default=str(ROOT / "config.json"))
+    p.add_argument("--config", type=str, default=str(default_config_path("v1")))
     p.add_argument(
         "--metadata",
         type=str,

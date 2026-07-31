@@ -1,0 +1,13 @@
+{
+    "train_datadir": "../../dataset/train_audio", 
+    "train_csv": "../../dataset/train.csv", 
+    "taxonomy_csv": "../../dataset/taxonomy.csv",
+    "train_soundscapes": "../../dataset/train_soundscapes", 
+    "test_soundscapes": "../../dataset/test_soundscapes", 
+    "submission_csv": "../../dataset/sample_submission.csv",
+
+    "train_voice_data": "utils/train_voice_data.pkl",
+    "data_cache_dir": "data_cache", 
+    "model_dir": "models",
+    "submission_dir": "output"
+}

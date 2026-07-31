@@ -5,77 +5,15 @@ Multi-label bird species classification from 5-second audio clips using an **Eff
 | | |
 |---|---|
 | **Task** | Multi-label audio classification (206 species) |
-| **Best validation AUC** | **0.8529** (macro ROC-AUC) |
+| **Best validation AUC** | **0.8529** (macro ROC-AUC) — v1 baseline (still champion) |
+| **v2 result** | 0.8401 — did not beat v1 |
+| **v3 recipe** | 4th-place-style: Soft AUC loss · 10 s · power-mel 256×512 · AttBlock · semi-supervised (see `docs/V3_TRAINING.md`) |
 | **Stack** | PyTorch · timm · librosa · torchvision |
-| **Hardware** | Tesla T4 (Kaggle) · ~completed training run |
-| **Checkpoint** | [`model.pth`](./model.pth) |
+| **Hardware** | Tesla T4 / T4×2 (Kaggle) · RTX 4070 (local) |
+| **Checkpoint** | [`models/model.pth`](./models/model.pth) |
 | **Source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
+| **v2 Kaggle train** | [danielsolo1770/birdclef-v2-train](https://www.kaggle.com/code/danielsolo1770/birdclef-v2-train) |
 | **License** | [MIT](./LICENSE) |
-
----
-
-## Why this project
-
-BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram-based CNN modeling. This repo packages the **training / evaluation / inference code aligned with the Kaggle notebook** that produced val AUC **0.8529**, plus the released weights.
-
-**Portfolio note:** This is the flagship supervised deep-learning project in my public profile — full pipeline, honest metrics, runnable CLIs.
-
----
-
-## Architecture
-
-```
-Audio (5s, 32 kHz, middle crop)
-    |
-    v
-Log-mel spectrogram  (1 x 128 x 256), min-max -> [0, 1]
-    |
-    v
-EfficientNet-B0 backbone  (timm efficientnet_b0, in_chans=1, no classifier)
-    |  features: (B, feature_dim, H, W)  # typically 1280
-    v
-SED head  (1x1 Conv -> 256 -> BN -> ReLU -> Dropout(0.3) -> 1x1 Conv -> 206)
-    |  framewise logits: (B, 206, T)
-    v
-Temporal attention pooling  (Linear 206->128 -> Tanh -> Linear -> 1 + softmax over T)
-    |
-    v
-Clip-level multi-label logits  (B, 206)  ->  sigmoid -> species probabilities
-```
-
-| Component | Choice |
-|-----------|--------|
-| Loss | `BCEWithLogitsLoss` (independent multi-label heads) |
-| Optimizer | AdamW (lr=1e-3, weight decay=**1e-5**) |
-| Schedule | CosineAnnealingLR, 10 epochs |
-| Precision | Mixed precision (AMP) |
-| Speed | Optional precomputed mel `.npy` cache |
-| Train augs | RandomHorizontalFlip + ColorJitter on mel |
-
----
-
-## Results
-
-| Split | Clips | Metric |
-|-------|------:|--------|
-| Train | 22,851 | — |
-| Validation | 5,713 | **Macro ROC-AUC = 0.8529** |
-| Total labeled clips | 28,564 | 206 species |
-
-Machine-readable summary: [`results/training_summary.json`](./results/training_summary.json)  
-Reproducibility card: [`results/REPRODUCIBILITY.md`](./results/REPRODUCIBILITY.md)
-
-**How to read the metric:** macro ROC-AUC averages per-species ranking quality so rare and common birds count equally. It is **not** accuracy at a fixed threshold.
-
-### Limitations (honest)
-
-| Limitation | Why it matters | Natural next step |
-|------------|----------------|-------------------|
-| Single stratified split | Metric variance unknown | Grouped / k-fold CV by site |
-| Light spectrogram augs | Less noise robustness | SpecAugment, noise, mixup |
-| No class re-weighting | Rare species may lag | `pos_weight` / focal / balanced sampling |
-| Clip-level supervision | No strong time stamps | Frame-level SED labels if available |
-| Not a public LB claim | Portfolio experiment | Full competition submission stack |
 
 ---
 
@@ -83,109 +21,213 @@ Reproducibility card: [`results/REPRODUCIBILITY.md`](./results/REPRODUCIBILITY.m
 
 ```
 BirdCLEF/
-├── model.pth                 # trained weights (val AUC 0.8529)
-├── config.json               # audio + training hyperparameters
-├── classes.json              # 206 species labels
-├── label2id.json             # label -> class index
-├── LICENSE                   # MIT
-├── results/
+├── README.md                 # you are here
+├── LICENSE
+├── requirements.txt
+│
+├── configs/                  # hyperparameters
+│   ├── config.json           # v1 (matches shipped model)
+│   ├── config_v2.json        # v2 (underperformed v1)
+│   └── config_v3.json        # v3 (4th-place-style: SoftAUC + 10s + semi) — NEW
+│
+├── labels/                   # class maps (206 species)
+│   ├── classes.json
+│   └── label2id.json
+│
+├── models/                   # published checkpoints
+│   └── model.pth             # v1 best (val AUC 0.8529)
+│
+├── artifacts/                # frozen experiment snapshots (do not overwrite)
+│   └── v1_baseline_auc08529/
+│
+├── results/                  # human-readable run cards + summaries
 │   ├── training_summary.json
 │   └── REPRODUCIBILITY.md
-├── requirements.txt
-├── scripts/
-│   └── precompute_mels.py
-└── src/
-    ├── model.py              # BirdCLEFSED (matches model.pth)
-    ├── audio.py              # mel extraction
-    ├── dataset.py            # multi-label Dataset + augs
-    ├── train.py
-    ├── evaluate.py
-    ├── inference.py
-    └── utils.py
+│
+├── src/                      # Python package (train / eval / infer)
+│   ├── model.py              # v1 BirdCLEFSED + NEW v3 BirdCLEFModelV3 (bn0+AttBlock)
+│   ├── losses.py             # NEW: AUCLoss / SoftAUCLoss / FocalBCELoss
+│   ├── train.py              # v1 training
+│   ├── train_v2.py           # v2 training
+│   ├── train_v3.py           # v3 training (4th-place-style) — REWRITTEN
+│   ├── pseudo_label.py       # NEW: pseudo-label train_soundscapes (Stage 2)
+│   ├── evaluate.py
+│   ├── inference.py          # + overlap-TTA / smooth / post-process flags
+│   ├── ensemble.py           # NEW: blend prediction CSVs
+│   ├── dataset.py            # + NEW BirdCLEFDatasetV3 (10s, mixup, rare upsample)
+│   ├── audio.py              # + NEW v3 power-mel extraction
+│   ├── metrics.py
+│   └── utils.py
+│
+├── scripts/                  # one-off utilities
+│   ├── precompute_mels.py
+│   ├── precompute_mels_v3.py # NEW: v3 power-mel cache
+│   ├── smoke_test_v2.py
+│   └── smoke_test_v3.py      # NEW: v3 end-to-end sanity
+│
+├── notebooks/                # Kaggle / exploration notebooks
+│   ├── birdclef_v2_kaggle.ipynb
+│   └── (v3 notebook planned)
+│
+├── docs/                     # guides + top-5 solution writeups (local reference)
+│   ├── V2_TRAINING.md
+│   ├── V3_PLAN.md            # NEW: solution comparison + why 4th place
+│   ├── V3_TRAINING.md        # NEW: v3 recipe
+│   └── writeups/             # NEW: 1st-5th place solutions + 4th-place code
+│
+└── data/                     # local data only (gitignored except README)
+    └── README.md
 ```
 
 ---
 
-## Setup
+## Why this project
+
+BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram-based CNN modeling. This repo packages the **training / evaluation / inference code** aligned with the Kaggle notebook that produced val AUC **0.8529**, plus the released weights.
+
+**Portfolio note:** Flagship supervised deep-learning project — full pipeline, honest metrics, runnable CLIs.
+
+---
+
+## Architecture
+
+```
+Audio (5s, 32 kHz, middle crop)
+    → log-mel spectrogram  (1 x 128 x 256), min-max -> [0, 1]
+    → EfficientNet-B0 backbone  (timm, in_chans=1)
+    → SED head  (1x1 conv → 206 framewise classes)
+    → Temporal attention pooling
+    → clip-level multi-label logits → sigmoid → probabilities
+```
+
+| Component | Choice |
+|-----------|--------|
+| Loss | `BCEWithLogitsLoss` (v2: + class `pos_weight`) |
+| Optimizer | AdamW |
+| Schedule | CosineAnnealingLR |
+| Precision | Mixed precision (AMP) |
+| Speed | Optional precomputed mel `.npy` cache |
+
+---
+
+## Results (v1)
+
+| Split | Clips | Metric |
+|-------|------:|--------|
+| Train | 22,851 | — |
+| Validation | 5,713 | **Macro ROC-AUC = 0.8529** |
+| Total labeled clips | 28,564 | 206 species |
+
+- Summary: [`results/training_summary.json`](./results/training_summary.json)
+- Reproducibility: [`results/REPRODUCIBILITY.md`](./results/REPRODUCIBILITY.md)
+- Frozen pack: [`artifacts/v1_baseline_auc08529/`](./artifacts/v1_baseline_auc08529/)
+
+**Metric note:** macro ROC-AUC averages per-species ranking quality. It is **not** accuracy at a fixed threshold.
+
+### Limitations (honest)
+
+| Limitation | Natural next step |
+|------------|-------------------|
+| Single stratified split | Grouped / k-fold CV |
+| Light augs (v1) | SpecAugment (v2) |
+| No class re-weighting (v1) | `pos_weight` / balanced sampling (v2) |
+
+---
+
+## Quick start
 
 ```bash
-git clone https://github.com/danielsolo707/BirdCLEF.git
-cd BirdCLEF
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**Data:** download BirdCLEF+ 2025 from [Kaggle](https://www.kaggle.com/competitions/birdclef-2025) (requires competition access). Point the CLI at your local `train.csv` and audio folder — nothing is hardcoded to `/kaggle/input`.
-
----
-
-## Usage
-
-### Inference (shipped `model.pth`)
+### Inference (shipped weights)
 
 ```bash
-python -m src.inference --audio path/to/clip.ogg --top-k 5
-python -m src.inference --audio path/to/audio_folder --threshold 0.3
+python -m src.inference \
+  --audio path/to/clip.ogg \
+  --checkpoint models/model.pth \
+  --config configs/config.json \
+  --top-k 5
 ```
 
-### Evaluate a labeled split
+### Evaluate
 
 ```bash
 python -m src.evaluate \
-  --checkpoint model.pth \
+  --checkpoint models/model.pth \
+  --config configs/config.json \
   --metadata path/to/val.csv \
-  --audio-dir path/to/audio
+  --audio-dir path/to/train_audio
 ```
 
-### Train (optional — weights already provided)
+### Train v1
+
+```bash
+python -m src.train \
+  --config configs/config.json \
+  --metadata path/to/train.csv \
+  --audio-dir path/to/train_audio \
+  --mel-dir path/to/mels \
+  --output-dir runs/v1_exp
+```
+
+### Train v2 (stronger recipe)
+
+```bash
+python -m src.train_v2 \
+  --config configs/config_v2.json \
+  --metadata path/to/train.csv \
+  --mel-dir path/to/mels \
+  --output-dir runs/v2_exp
+```
+
+See [`docs/V2_TRAINING.md`](./docs/V2_TRAINING.md) for the full v2 guide (also running on Kaggle).
+
+### Train v3 (4th-place-style recipe — Soft AUC + 10 s + semi-supervised)
+
+```bash
+# 1. precompute v3 power-mels (10 s, 256×512)
+python scripts/precompute_mels_v3.py \
+  --audio-dir path/to/train_audio --output-dir path/to/mels_v3 \
+  --config configs/config_v3.json
+
+# 2. train (single fold)
+python -m src.train_v3 \
+  --config configs/config_v3.json \
+  --metadata path/to/train.csv --mel-dir path/to/mels_v3 \
+  --output-dir runs/v3_exp001 --fold 0 --folds 5
+
+# 3. (optional Stage 2) pseudo-label soundscapes, then re-train with --semi-csv
+python -m src.pseudo_label \
+  --config configs/config_v3.json \
+  --checkpoints runs/v3_exp001/model_fold0_best.pth \
+  --soundscapes-dir path/to/train_soundscapes \
+  --mel-dir path/to/mels_v3_semi --output-csv runs/pseudo/semi_chunks.csv
+
+# 4. overlap-TTA inference with a v3 checkpoint
+python -m src.inference \
+  --audio path/to/soundscape.ogg --checkpoint runs/v3_exp001/model_fold0_best.pth \
+  --config configs/config_v3.json --model-version v3 --overlap --smooth --postprocess
+```
+
+See [`docs/V3_TRAINING.md`](./docs/V3_TRAINING.md) for the full v3 guide.
+
+### Precompute mels
 
 ```bash
 python scripts/precompute_mels.py \
   --audio-dir path/to/train_audio \
   --output-dir path/to/mels \
-  --metadata path/to/train.csv
-
-python -m src.train \
-  --config config.json \
-  --metadata path/to/train.csv \
-  --audio-dir path/to/train_audio \
-  --mel-dir path/to/mels \
-  --output-dir runs/exp001
+  --config configs/config.json
 ```
 
-Checkpoints (`model_best.pth`, `birdclef_best_model.pth`, `model_last.pth`) and `metrics.json` are written under `--output-dir`.
-
 ---
 
-## Design decisions
+## Design choices (short)
 
-1. **SED + attention instead of global pool only** — bird calls are sparse in time; attention can focus on informative frames.
-2. **1-channel EfficientNet-B0** — strong ImageNet inductive bias on spectrograms with T4-friendly cost.
-3. **Min-max log-mel in [0, 1] + middle crop** — matches the training notebook that produced `model.pth` (train/serve parity).
-4. **Precomputed mels** — ~10× faster multi-epoch training after a one-time feature pass.
-5. **Config + CLI paths** — hyperparameters in `config.json`; data roots never hard-coded to Kaggle only.
-
----
-
-## What this repo demonstrates
-
-- Multi-label deep learning on competition-scale audio
-- Spectrogram pipelines + CNN transfer learning (`timm`)
-- Train / eval / inference entrypoints suitable for review
-- Reproducible config + shipped weights (no retrain required to inspect the system)
-
----
-
-## Author
-
-**Daniel Soleimany** · [github.com/danielsolo707](https://github.com/danielsolo707) · [danielsoleimani.ir](https://danielsoleimani.ir/)
-
----
-
-## License
-
-MIT License — see [LICENSE](./LICENSE).
-
-Code is provided for portfolio / educational use. **BirdCLEF competition data** remains under the competition’s own terms and is **not** redistributed in this repository.
+1. **SED + attention** — bird calls are sparse in time; attention focuses useful frames.  (v3: PANNs-style `AttBlock`)
+2. **Precomputed mels** — large speedup for multi-epoch training.  (v3: power-mel 256×512, db at load)
+3. **Min-max log-mel in [0, 1] + middle crop** — train/serve parity with the notebook that produced `models/model.pth`.  (v3: 10 s random window + `power_to_db`)
+4. **Configs + label maps in folders** — no magic paths buried only in notebooks.
+5. **`artifacts/` freezes** — immutable snapshots for honest v1 vs v2 comparison.
+6. **v3 loss = Soft AUC** (4th-place trick) — optimizes the competition metric directly, overfitting-resistant, supports soft labels for semi-supervised learning.

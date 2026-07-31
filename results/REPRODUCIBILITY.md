@@ -5,11 +5,13 @@
 | Run | Location | Notes |
 |-----|----------|--------|
 | **v1 baseline (frozen)** | [`../artifacts/v1_baseline_auc08529/`](../artifacts/v1_baseline_auc08529/) | First published outcome; do not overwrite |
-| Living root checkpoint | [`../model.pth`](../model.pth) | Same weights as v1 until a newer run is promoted |
+| Living published checkpoint | [`../models/model.pth`](../models/model.pth) | Same weights as v1 until a newer run is promoted |
+| Living config (v1) | [`../configs/config.json`](../configs/config.json) | |
+| Labels | [`../labels/`](../labels/) | `classes.json`, `label2id.json` |
 
 Git tag (local until push): **`v1.0.0`**
 
-## Published run (shipped `model.pth` = v1)
+## Published run (shipped `models/model.pth` = v1)
 
 | Field | Value |
 |-------|--------|
@@ -30,7 +32,7 @@ Git tag (local until push): **`v1.0.0`**
 | Batch size | 16 (val loader ×2) |
 | Seed | 42 (local training script default) |
 | Source notebook | https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be |
-| Config snapshot | [`../config.json`](../config.json) or frozen [`../artifacts/v1_baseline_auc08529/config.json`](../artifacts/v1_baseline_auc08529/config.json) |
+| Config snapshot | [`../configs/config.json`](../configs/config.json) or frozen [`../artifacts/v1_baseline_auc08529/config.json`](../artifacts/v1_baseline_auc08529/config.json) |
 | Training summary | [`training_summary.json`](./training_summary.json) |
 | Checkpoint SHA256 | `775CE724E2DC08BAC033FC8E1C23957995B641171BAE0DCE58106C4C51E7FC74` |
 
@@ -53,8 +55,8 @@ With competition data locally:
 
 ```bash
 python -m src.evaluate \
-  --checkpoint model.pth \
-  --config config.json \
+  --checkpoint models/model.pth \
+  --config configs/config.json \
   --metadata path/to/val_or_train.csv \
   --audio-dir path/to/train_audio
 ```
@@ -69,10 +71,10 @@ python -m src.evaluate \
   --audio-dir path/to/train_audio
 ```
 
-Re-training produces **new** checkpoints under `runs/` (or future `artifacts/v2_*`) and will not bit-match `model.pth` / the v1 freeze unless the full Kaggle environment, data order, and seeds match.
+Re-training produces **new** checkpoints under `runs/` (or future `artifacts/v2_*`) and will not bit-match `models/model.pth` / the v1 freeze unless the full Kaggle environment, data order, and seeds match.
 
 ## What is *not* claimed
 
-- Public competition leaderboard placement
-- Perfect per-species performance (macro average can hide weak rare classes)
-- Bit-identical multi-machine reproducibility without locked CUDA/cuDNN/data snapshots
+- Public competition leaderboard placement  
+- Perfect per-species performance (macro average can hide weak rare classes)  
+- Bit-identical multi-machine reproducibility without locked CUDA/cuDNN/data snapshots  

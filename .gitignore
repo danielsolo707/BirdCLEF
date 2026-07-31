@@ -6,18 +6,24 @@ __pycache__/
 venv/
 .env
 
-# Local scratch / pulled notebook dumps
+# Local scratch / Kaggle packaging dumps
 .tmp_kaggle/
-*.ipynb
+kaggle_upload/
 
-# Training artifacts (keep only the published checkpoint at repo root)
+# Ignore ad-hoc notebooks, keep the official v2 Kaggle notebook
+*.ipynb
+!notebooks/
+!notebooks/birdclef_v2_kaggle.ipynb
+
+# Training run outputs (use artifacts/ for frozen releases)
 runs/
 outputs/
 wandb/
 *.log
 
-# Data (never commit competition audio / mels)
-data/
+# Local competition data (keep data/README.md only)
+data/*
+!data/README.md
 raw/
 mels/
 *.ogg
@@ -25,8 +31,12 @@ mels/
 *.mp3
 *.flac
 *.npy
+
+# Interview notes (local only)
+docs/interview/
 INTERVIEW_PRESENTATION.md
 INTERVIEW_PRESENTATION_FA.md
+
 # Notebooks / IDE
 .ipynb_checkpoints/
 .idea/

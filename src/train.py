@@ -11,7 +11,7 @@ Training loop aligned with the Kaggle notebook that produced ``model.pth``
 Example::
 
     python -m src.train \\
-        --config config.json \\
+        --config configs/config.json \\
         --metadata /path/to/train.csv \\
         --audio-dir /path/to/train_audio \\
         --mel-dir /path/to/precomputed_mels \\
@@ -35,12 +35,21 @@ from tqdm import tqdm
 
 from .dataset import BirdCLEFDataset, labels_from_metadata, load_label_maps
 from .model import BirdCLEFSED
-from .utils import load_config, multilabel_auc, project_root, resolve_device, save_json, set_seed
+from .utils import (
+    default_config_path,
+    labels_dir,
+    load_config,
+    multilabel_auc,
+    project_root,
+    resolve_device,
+    save_json,
+    set_seed,
+)
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Train BirdCLEF+ SED model")
-    p.add_argument("--config", type=str, default=str(project_root() / "config.json"))
+    p.add_argument("--config", type=str, default=str(default_config_path("v1")))
     p.add_argument("--metadata", type=str, required=True, help="Path to train.csv")
     p.add_argument("--audio-dir", type=str, default=None)
     p.add_argument("--mel-dir", type=str, default=None, help="Precomputed .npy mels")
@@ -106,7 +115,8 @@ def main() -> None:
 
     df = pd.read_csv(args.metadata)
 
-    if args.build_labels_from_metadata or not (root / "label2id.json").exists():
+    has_labels = (labels_dir() / "label2id.json").exists() or (root / "label2id.json").exists()
+    if args.build_labels_from_metadata or not has_labels:
         classes, label2id = labels_from_metadata(df)
         save_json(classes, out_dir / "classes.json")
         save_json(label2id, out_dir / "label2id.json")

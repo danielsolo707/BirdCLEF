@@ -1,0 +1,25 @@
+{
+  "id": "danielsolo1770/birdclef-v2-train",
+  "id_no": 128799533,
+  "title": "birdclef-v2-train",
+  "code_file": "birdclef-v2-train.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [
+    "danielsolo1770/birdclef-v2-code-pack"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [
+    "birdclef-2025"
+  ],
+  "model_sources": [],
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+  "machine_shape": "NvidiaTeslaT4"
+}

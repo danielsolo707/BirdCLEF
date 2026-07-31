@@ -1,4 +1,4 @@
-"""Shared helpers: config, seeding, metrics."""
+"""Shared helpers: config, paths, seeding, metrics."""
 
 from __future__ import annotations
 
@@ -9,6 +9,44 @@ from pathlib import Path
 import numpy as np
 import torch
 from sklearn.metrics import roc_auc_score
+
+
+def project_root() -> Path:
+    """Repo root (parent of ``src/``)."""
+    return Path(__file__).resolve().parent.parent
+
+
+def configs_dir() -> Path:
+    return project_root() / "configs"
+
+
+def labels_dir() -> Path:
+    return project_root() / "labels"
+
+
+def models_dir() -> Path:
+    return project_root() / "models"
+
+
+def artifacts_dir() -> Path:
+    return project_root() / "artifacts"
+
+
+def results_dir() -> Path:
+    return project_root() / "results"
+
+
+def default_config_path(version: str = "v1") -> Path:
+    if version in ("v3", "3"):
+        return configs_dir() / "config_v3.json"
+    if version in ("v2", "2"):
+        return configs_dir() / "config_v2.json"
+    return configs_dir() / "config.json"
+
+
+def default_checkpoint_path() -> Path:
+    """Published best weights (v1 until a newer run is promoted)."""
+    return models_dir() / "model.pth"
 
 
 def load_config(path: str | Path) -> dict:
@@ -39,7 +77,10 @@ def resolve_device(preferred: str = "cuda") -> torch.device:
 
 
 def multilabel_auc(y_true: np.ndarray, y_prob: np.ndarray) -> float:
-    """Macro ROC-AUC over classes that appear in y_true."""
+    """Macro ROC-AUC over classes that appear in y_true.
+
+    Kept here so v1 ``train.py`` keeps working. v2 prefers ``src.metrics``.
+    """
     scores = []
     for c in range(y_true.shape[1]):
         if y_true[:, c].min() == y_true[:, c].max():
@@ -48,7 +89,3 @@ def multilabel_auc(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     if not scores:
         return float("nan")
     return float(np.mean(scores))
-
-
-def project_root() -> Path:
-    return Path(__file__).resolve().parent.parent
