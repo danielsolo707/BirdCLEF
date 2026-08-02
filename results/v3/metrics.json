@@ -441,5 +441,22 @@
     "Best checkpoint per fold saved as model_fold{fold}_best.pth.",
     "Next: pseudo-label soundscapes (src.pseudo_label) then re-train with --semi-csv.",
     "Next: overlap-TTA inference (src.inference --overlap) + ensemble (src.ensemble)."
-  ]
+  ],
+  "honesty": {
+    "comparison_type": "system_upgrade_not_pure_ablation",
+    "loss_optimizes": "soft_surrogate_of_macro_ROC_AUC",
+    "supporting_metrics_at_best_epoch": {
+      "macro_roc_auc": 0.9694,
+      "macro_pr_auc": 0.6534,
+      "macro_f1": 0.5275,
+      "micro_f1": 0.6342
+    },
+    "cv": "single_fold_stratified_80_20_primary_label",
+    "not_yet_run": [
+      "5_fold_mean_auc",
+      "stage2_pseudo_soundscapes",
+      "site_grouped_cv"
+    ],
+    "next_steps_doc": "results/v3/NEXT_STEPS.md"
+  }
 }

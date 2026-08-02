@@ -1,19 +1,21 @@
 # BirdCLEF+ 2025 — Sound Event Detection
 
-Multi-label bird species classification from 5-second audio clips using an **EfficientNet-B0** backbone and a **Sound Event Detection (SED)** head with **attention pooling**.
+Multi-label bird species classification (206 species) with a full **versioned** pipeline:
+**v1** clean SED baseline → **v2** failed recipe experiment → **v3** system upgrade (champion).
 
 | | |
 |---|---|
 | **Task** | Multi-label audio classification (206 species) |
-| **Best validation AUC** | **0.9694** (macro ROC-AUC) — v3 champion (was 0.8529 v1) |
-| **v2 result** | 0.8401 — did not beat v1 |
-| **v3 result** | **0.9694** — 4th-place-style: Soft AUC loss · 10 s · power-mel 256×512 · AttBlock (see `docs/V3_TRAINING.md`) |
+| **Champion** | **v3** — val macro ROC-AUC **0.9694** ([`models/v3/model_best.pth`](./models/v3/model_best.pth)) |
+| **v1 baseline** | 0.8529 — first published SED (log-mel 5 s) |
+| **v2 result** | 0.8401 — did **not** beat v1 (heavy reweight / sampler) |
+| **v3 recipe** | Soft AUC · 10 s · power-mel 256×512 · AttBlock · mixup · rare upsampling |
 | **Stack** | PyTorch · timm · librosa · torchvision |
-| **Hardware** | Tesla T4 / T4×2 (Kaggle) · RTX 4070 (local) |
-| **Checkpoint** | [`models/v3/model_best.pth`](./models/v3/model_best.pth) |
-| **Source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
-| **v2 Kaggle train** | [danielsolo1770/birdclef-v2-train](https://www.kaggle.com/code/danielsolo1770/birdclef-v2-train) |
+| **Hardware** | RTX 4070 (local champion run) · Tesla T4 / T4×2 (Kaggle) |
+| **v1 source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
 | **License** | [MIT](./LICENSE) |
+
+> **How to read v3:** it is a **system upgrade** (features + model head + loss + augs), not “same model, only loss changed.” See [Honest limitations](#honest-limitations--roadmap) below.
 
 ---
 
@@ -85,70 +87,79 @@ BirdCLEF/
 
 ## Why this project
 
-BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram-based CNN modeling. This repo packages the **training / evaluation / inference code** aligned with the Kaggle notebook that produced val AUC **0.8529**, plus the released weights.
+BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram CNNs. This repo is a **portfolio-style experiment log**:
 
-**Portfolio note:** Flagship supervised deep-learning project — full pipeline, honest metrics, runnable CLIs.
+1. **v1** — clean baseline (val AUC 0.8529)  
+2. **v2** — aggressive imbalance tricks that **underperformed** (0.8401)  
+3. **v3** — competition-informed **system upgrade** that **won** (0.9694)
+
+**Portfolio note:** Flagship supervised deep-learning project — full pipeline, honest metrics, frozen run cards, runnable CLIs.
 
 ---
 
 ## Architecture
 
+### v3 champion (current best)
+
 ```
-Audio (5s, 32 kHz, middle crop)
-    → log-mel spectrogram  (1 x 128 x 256), min-max -> [0, 1]
-    → EfficientNet-B0 backbone  (timm, in_chans=1)
-    → SED head  (1x1 conv → 206 framewise classes)
-    → Temporal attention pooling
-    → clip-level multi-label logits → sigmoid → probabilities
+Audio (10 s @ 32 kHz; random window train / first window val)
+    → power-mel 256×512  (n_fft 2048, hop 64, n_mels 256, fmin 60)
+    → power_to_db at load
+    → bn0 + EfficientNet-B0 (timm, drop_path) + freq-mean
+    → channel smoothing + PANNs-style AttBlock
+    → clip-level multi-label logits → sigmoid
 ```
 
-| Component | Choice |
-|-----------|--------|
-| Loss | `BCEWithLogitsLoss` (v2: + class `pos_weight`) · v3: **Soft AUCLoss** |
-| Optimizer | AdamW |
-| Schedule | CosineAnnealingLR |
-| Precision | Mixed precision (AMP) |
-| Speed | Optional precomputed mel `.npy` cache |
-| v3 extras | 10 s window · power-mel 256×512 · AttBlock attention pooling · mixup(α=0.5) · rare-class upsampling |
+| Component | v3 choice |
+|-----------|-----------|
+| Loss | **SoftAUCLoss** (metric-aligned; soft labels OK for Stage 2) |
+| Optimizer / schedule | AdamW · CosineAnnealingLR |
+| Precision | AMP |
+| Augs | Spec mixup (α=0.5) · SpecAugment · rare-class upsample (≥100) |
+| Speed | Precomputed power-mel cache (`data/mels_v3/`) |
+
+### v1 baseline (historical)
+
+```
+Audio (5 s, middle crop) → log-mel 128×256 → EfficientNet-B0 SED
+    → 1×1 SED head → temporal attention → multi-label logits
+```
+
+| Component | v1 / v2 |
+|-----------|---------|
+| Loss | BCE · v2: BCE + `pos_weight` + balanced sampler |
+| Features | log-mel 5 s, min-max to [0, 1] |
 
 ---
 
-## Results (v3 — champion)
+## Results
 
-| Version | Recipe | Val macro ROC-AUC | Δ vs v1 |
-|---------|--------|------------------:|--------:|
-| v1 | SED baseline, log-mel 128×256 | 0.8529 | — |
-| v2 | same model, SpecAugment + pos_weight | 0.8401 | −0.013 |
-| **v3** | **Soft AUC · 10 s · power-mel 256×512 · AttBlock · mixup** | **0.9694** | **+0.117** |
+| Version | Recipe | Val macro ROC-AUC | Macro F1 (best ep) | Δ vs v1 |
+|---------|--------|------------------:|-------------------:|--------:|
+| v1 | SED baseline, log-mel 128×256 | 0.8529 | (weak @ thr=0.5) | — |
+| v2 | same model + SpecAugment + heavy reweight | 0.8401 | ~0.10 | −0.013 |
+| **v3** | **full system upgrade (see above)** | **0.9694** | **~0.53** | **+0.117** |
 
-- Run card: [`results/v3/metrics.json`](./results/v3/metrics.json) · per-species: [`results/v3/per_class_metrics.csv`](./results/v3/per_class_metrics.csv)
-- Checkpoints: [`models/v3/model_best.pth`](./models/v3/model_best.pth) (epoch 15, 0.9694) · `model_last.pth` (epoch 20, 0.9670)
-- Best per-epoch val AUC trajectory: 0.8529 → 0.9686 (ep 11) → 0.9694 (ep 15) → 0.9670 (ep 20)
+- Run cards: [`results/v1/`](./results/v1/) · [`results/v2/`](./results/v2/) · [`results/v3/`](./results/v3/)  
+- Checkpoints: [`models/v1/`](./models/v1/) · [`models/v2/`](./models/v2/) · [`models/v3/`](./models/v3/)  
+- v3 best epoch: **15** (0.9694); ep20 last: 0.9670 · PR-AUC ~0.65  
 
-**Metric note:** macro ROC-AUC averages per-species ranking quality. It is **not** accuracy at a fixed threshold.
-Validation uses the same random stratified 80/20 split as v1/v2 — fair across versions, optimistic vs. the Kaggle leaderboard (not grouped by recording site).
+**Metric note:** macro ROC-AUC is **ranking quality**, not accuracy at a fixed threshold.  
+**Soft AUC note:** v3 optimizes a soft surrogate of AUC — that *helps* the headline metric by design. Supporting evidence that learning is real: **macro F1 ~0.53** and **macro PR-AUC ~0.65** (v2 was ~0.10 F1 / ~0.18 PR-AUC).  
 
-## Results (v1 — original baseline)
+Validation uses a **random stratified 80/20 on `primary_label`** (same style as v1/v2) — fair **across versions**, **optimistic vs Kaggle LB** (not grouped by site/recording).
 
-| Split | Clips | Metric |
-|-------|------:|--------|
-| Train | 22,851 | — |
-| Validation | 5,713 | **Macro ROC-AUC = 0.8529** |
-| Total labeled clips | 28,564 | 206 species |
+### Honest limitations & roadmap
 
-- Summary: [`results/v1/training_summary.json`](./results/v1/training_summary.json)
-- Reproducibility: [`results/v1/REPRODUCIBILITY.md`](./results/v1/REPRODUCIBILITY.md)
-- Run notes: [`results/v1/NOTES.md`](./results/v1/NOTES.md)
+| Caveat | Status | What we do about it |
+|--------|--------|---------------------|
+| v3 ≠ pure ablation of v1 | **Documented** | Call it a **system upgrade** (features + head + loss + augs), not “only Soft AUC” |
+| SoftAUC optimizes AUC | **Documented** | Always report **F1 + PR-AUC** beside AUC |
+| Single fold only (champion) | **Code ready** | Run `bash v3/train_5fold.sh` → mean fold AUC for credibility |
+| Stage 2 pseudo-labels unused | **Code ready** | `bash v3/stage2_pseudo.sh` after Stage 1 folds exist |
+| Split not site-grouped | **Accepted for now** | Same split style as v1/v2 for fair version compare; site-grouped CV is future work |
 
-**Metric note:** macro ROC-AUC averages per-species ranking quality. It is **not** accuracy at a fixed threshold.
-
-### Limitations (honest)
-
-| Limitation | Natural next step |
-|------------|-------------------|
-| Single stratified split | Grouped / k-fold CV |
-| Light augs (v1) | SpecAugment (v2) |
-| No class re-weighting (v1) | `pos_weight` / balanced sampling (v2) |
+Details + exact commands: [`results/v3/NEXT_STEPS.md`](./results/v3/NEXT_STEPS.md).
 
 ---
 
@@ -158,24 +169,28 @@ Validation uses the same random stratified 80/20 split as v1/v2 — fair across 
 pip install -r requirements.txt
 ```
 
-### Inference (shipped weights)
+### Inference (champion = v3)
 
 ```bash
 python -m src.inference \
   --audio path/to/clip.ogg \
-  --checkpoint models/v1/model.pth \
-  --config v1/config.json \
+  --checkpoint models/v3/model_best.pth \
+  --config v3/config.json \
+  --model-version v3 \
   --top-k 5
 ```
+
+v1 weights still work with `--checkpoint models/v1/model.pth --config v1/config.json` (omit `--model-version v3`).
 
 ### Evaluate
 
 ```bash
+# v3
 python -m src.evaluate \
-  --checkpoint models/v1/model.pth \
-  --config v1/config.json \
+  --checkpoint models/v3/model_best.pth \
+  --config v3/config.json \
   --metadata path/to/val.csv \
-  --audio-dir path/to/train_audio
+  --mel-dir path/to/mels_v3
 ```
 
 ### Train v1
@@ -209,26 +224,20 @@ python -m v3.precompute_mels \
   --audio-dir data/train_audio --output-dir data/mels_v3 \
   --config v3/config.json --metadata data/train.csv   # 4 procs × --metadata slice_N.csv
 
-# 2. train (single fold) — or just: bash v3/train_local.sh
-python -m v3.train \
-  --config v3/config.json \
-  --metadata data/train.csv --mel-dir data/mels_v3 \
-  --output-dir runs/v3_exp001 --fold 0 --folds 1
+# 2. train Stage 1 (champion freeze used single fold; prefer 5-fold for credibility)
+bash v3/train_local.sh          # single fold → runs/v3_exp001
+# bash v3/train_5fold.sh        # all 5 folds → runs/v3_5fold (long)
 
-# 3. (optional Stage 2) pseudo-label soundscapes, then re-train with --semi-csv
-python -m v3.pseudo_label \
-  --config v3/config.json \
-  --checkpoints runs/v3_exp001/model_fold0_best.pth \
-  --soundscapes-dir path/to/train_soundscapes \
-  --mel-dir path/to/mels_v3_semi --output-csv runs/pseudo/semi_chunks.csv
+# 3. optional Stage 2 (pseudo-label soundscapes → re-train)
+bash v3/stage2_pseudo.sh        # needs Stage-1 fold checkpoints
 
-# 4. overlap-TTA inference with a v3 checkpoint
+# 4. overlap-TTA inference
 python -m src.inference \
-  --audio path/to/soundscape.ogg --checkpoint runs/v3_exp001/model_fold0_best.pth \
+  --audio path/to/soundscape.ogg --checkpoint models/v3/model_best.pth \
   --config v3/config.json --model-version v3 --overlap --smooth --postprocess
 ```
 
-See [`docs/V3_TRAINING.md`](./docs/V3_TRAINING.md) for the full v3 guide.
+Roadmap for 5-fold + Stage 2: [`results/v3/NEXT_STEPS.md`](./results/v3/NEXT_STEPS.md).
 
 ### Precompute mels (v1/v2)
 
@@ -248,4 +257,5 @@ python -m src.precompute_mels \
 3. **Min-max log-mel in [0, 1] + middle crop** — train/serve parity with the notebook that produced `models/v1/model.pth`.  (v3: 10 s random window + `power_to_db`)
 4. **Per-version folders (`v1/`, `v2/`, `v3/`)** — shared library lives in `src/`; each version keeps its train entry point, config, and tools together. Checkpoints → `models/vN/`, run results → `results/vN/`.
 5. **`results/v1|v2|v3/` freezes** — immutable per-version run cards for honest comparison; no duplicated files.
-6. **v3 loss = Soft AUC** (4th-place trick) — optimizes the competition metric directly, overfitting-resistant, supports soft labels for semi-supervised learning.
+6. **v3 = system upgrade + Soft AUC** — longer context, stronger mels, AttBlock, mixup; Soft AUC aligns training with ranking (report F1/PR-AUC too). Soft labels enable Stage-2 semi-supervised learning.
+7. **Honest experiment log** — v2 kept as a failed run; limitations and next steps live under `results/v3/NEXT_STEPS.md`.

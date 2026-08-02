@@ -321,15 +321,27 @@ def main() -> None:
         "backbone": backbone,
         "criterion": criterion_name,
         "fold_summaries": summaries,
+        "honesty": {
+            "comparison_type": "system_upgrade_not_pure_ablation",
+            "loss_optimizes": "soft_surrogate_of_macro_ROC_AUC",
+            "cv_mode": f"folds={n_folds}",
+            "split": "stratified_primary_label" if n_folds == 1 else "StratifiedKFold_primary_label",
+            "not_site_grouped": True,
+        },
         "notes": [
-            "Best checkpoint per fold saved as model_fold{fold}_best.pth.",
-            "Next: pseudo-label soundscapes (src.pseudo_label) then re-train with --semi-csv.",
-            "Next: overlap-TTA inference (src.inference --overlap) + ensemble (src.ensemble).",
+            "v3 is a system upgrade vs v1 (features + AttBlock + SoftAUC + mixup), not a pure ablation.",
+            "SoftAUC optimizes ranking — also inspect macro_f1 / macro_pr_auc in fold history.",
+            "Best checkpoint per fold: model_fold{fold}_best.pth.",
+            "Next credibility step: --folds 5 (bash v3/train_5fold.sh) → mean_fold_auc.",
+            "Next LB-style step: bash v3/stage2_pseudo.sh (pseudo soundscapes + --semi-csv).",
+            "Inference: src.inference --model-version v3 --overlap --smooth --postprocess; blend with src.ensemble.",
         ],
     }
     save_json(summary, out_dir / "metrics.json")
     print(f"\nDone. Mean fold AUC: {mean_auc:.4f} | v1 baseline: {V1_BASELINE_AUC} | delta: {mean_auc - V1_BASELINE_AUC:+.4f}")
     print(f"Artifacts written to: {out_dir}")
+    if n_folds == 1:
+        print("Note: single-fold run. For a more credible mean, re-run with --folds 5 (see results/v3/NEXT_STEPS.md).")
 
 
 if __name__ == "__main__":

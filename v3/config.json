@@ -1,6 +1,6 @@
 {
   "VERSION": "v3",
-  "NOTES": "v3 = 4th-place-style recipe (Soft AUC loss, 10s, power-mel 256x512, AttBlock SED head, semi-supervised soundscapes). Old v3 (aggressive dual-T4) was removed.",
+  "NOTES": "v3 = SYSTEM UPGRADE vs v1 (not a pure ablation): SoftAUC + 10s + power-mel 256x512 + AttBlock + mixup + rare upsample. SoftAUC optimizes ranking — always report F1/PR-AUC too. Champion freeze is single-fold; use --folds 5 for mean AUC. Stage 2: --semi-csv after v3.pseudo_label. Old aggressive dual-T4 B3 recipe was removed.",
   "SR": 32000,
   "DURATION": 10.0,
   "N_FFT": 2048,
