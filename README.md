@@ -5,12 +5,12 @@ Multi-label bird species classification from 5-second audio clips using an **Eff
 | | |
 |---|---|
 | **Task** | Multi-label audio classification (206 species) |
-| **Best validation AUC** | **0.8529** (macro ROC-AUC) — v1 baseline (still champion) |
+| **Best validation AUC** | **0.9694** (macro ROC-AUC) — v3 champion (was 0.8529 v1) |
 | **v2 result** | 0.8401 — did not beat v1 |
-| **v3 recipe** | 4th-place-style: Soft AUC loss · 10 s · power-mel 256×512 · AttBlock · semi-supervised (see `docs/V3_TRAINING.md`) |
+| **v3 result** | **0.9694** — 4th-place-style: Soft AUC loss · 10 s · power-mel 256×512 · AttBlock (see `docs/V3_TRAINING.md`) |
 | **Stack** | PyTorch · timm · librosa · torchvision |
 | **Hardware** | Tesla T4 / T4×2 (Kaggle) · RTX 4070 (local) |
-| **Checkpoint** | [`models/v1/model.pth`](./models/v1/model.pth) |
+| **Checkpoint** | [`models/v3/model_best.pth`](./models/v3/model_best.pth) |
 | **Source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
 | **v2 Kaggle train** | [danielsolo1770/birdclef-v2-train](https://www.kaggle.com/code/danielsolo1770/birdclef-v2-train) |
 | **License** | [MIT](./LICENSE) |
@@ -49,9 +49,10 @@ BirdCLEF/
 │   ├── smoke_test.py         # fast local sanity
 │   └── __init__.py
 │
-├── v3/                       # version 3 — 4th-place-style recipe (Soft AUC + 10s + semi)
+├── v3/                       # version 3 — champion (val AUC 0.9694)
 │   ├── train.py              # v3 training
 │   ├── config.json           # v3 hyperparameters
+│   ├── train_local.sh        # one-shot local launcher (mels + train)
 │   ├── pseudo_label.py       # pseudo-label train_soundscapes (Stage 2)
 │   ├── precompute_mels.py    # v3 power-mel cache
 │   ├── smoke_test.py         # v3 end-to-end sanity
@@ -65,15 +66,19 @@ BirdCLEF/
 │   ├── README.md
 │   ├── v1/model.pth          # v1 best (val AUC 0.8529)
 │   ├── v2/model_best.pth     # v2 best (0.8401) + model_last.pth
-│   └── v3/                   # v3 checkpoints (empty — ready)
+│   └── v3/model_best.pth     # v3 champion (0.9694) + model_last.pth
 │
 ├── results/                  # per-version run results
 │   ├── v1/                   # training_summary.json + REPRODUCIBILITY.md + NOTES.md
 │   ├── v2/                   # metrics.json + per_class_metrics.csv + config_used.json
-│   └── v3/                   # v3 results (empty — ready)
+│   └── v3/                   # metrics.json + per_class_metrics.csv + config_used.json
 │
 └── data/                     # local data only (gitignored except README)
-    └── README.md
+    ├── README.md
+    ├── train.csv             # 28,564 labeled clips · 206 species
+    ├── train_audio/          # labeled ogg clips (7.3 GB)
+    ├── train_soundscapes/    # 9,726 unlabeled recordings (4.4 GB, Stage 2)
+    └── mels_v3/              # precomputed v3 power-mels (15 GB)
 ```
 
 ---
@@ -99,15 +104,31 @@ Audio (5s, 32 kHz, middle crop)
 
 | Component | Choice |
 |-----------|--------|
-| Loss | `BCEWithLogitsLoss` (v2: + class `pos_weight`) |
+| Loss | `BCEWithLogitsLoss` (v2: + class `pos_weight`) · v3: **Soft AUCLoss** |
 | Optimizer | AdamW |
 | Schedule | CosineAnnealingLR |
 | Precision | Mixed precision (AMP) |
 | Speed | Optional precomputed mel `.npy` cache |
+| v3 extras | 10 s window · power-mel 256×512 · AttBlock attention pooling · mixup(α=0.5) · rare-class upsampling |
 
 ---
 
-## Results (v1)
+## Results (v3 — champion)
+
+| Version | Recipe | Val macro ROC-AUC | Δ vs v1 |
+|---------|--------|------------------:|--------:|
+| v1 | SED baseline, log-mel 128×256 | 0.8529 | — |
+| v2 | same model, SpecAugment + pos_weight | 0.8401 | −0.013 |
+| **v3** | **Soft AUC · 10 s · power-mel 256×512 · AttBlock · mixup** | **0.9694** | **+0.117** |
+
+- Run card: [`results/v3/metrics.json`](./results/v3/metrics.json) · per-species: [`results/v3/per_class_metrics.csv`](./results/v3/per_class_metrics.csv)
+- Checkpoints: [`models/v3/model_best.pth`](./models/v3/model_best.pth) (epoch 15, 0.9694) · `model_last.pth` (epoch 20, 0.9670)
+- Best per-epoch val AUC trajectory: 0.8529 → 0.9686 (ep 11) → 0.9694 (ep 15) → 0.9670 (ep 20)
+
+**Metric note:** macro ROC-AUC averages per-species ranking quality. It is **not** accuracy at a fixed threshold.
+Validation uses the same random stratified 80/20 split as v1/v2 — fair across versions, optimistic vs. the Kaggle leaderboard (not grouped by recording site).
+
+## Results (v1 — original baseline)
 
 | Split | Clips | Metric |
 |-------|------:|--------|
@@ -180,19 +201,19 @@ python -m v2.train \
 
 See [`docs/V2_TRAINING.md`](./docs/V2_TRAINING.md) for the full v2 guide (also running on Kaggle).
 
-### Train v3 (4th-place-style recipe — Soft AUC + 10 s + semi-supervised)
+### Train v3 (4th-place-style recipe — champion)
 
 ```bash
-# 1. precompute v3 power-mels (10 s, 256×512)
+# 1. precompute v3 power-mels (10 s, 256×512) — 4-way parallel ≈ 16 min on 20 cores
 python -m v3.precompute_mels \
-  --audio-dir path/to/train_audio --output-dir path/to/mels_v3 \
-  --config v3/config.json
+  --audio-dir data/train_audio --output-dir data/mels_v3 \
+  --config v3/config.json --metadata data/train.csv   # 4 procs × --metadata slice_N.csv
 
-# 2. train (single fold)
+# 2. train (single fold) — or just: bash v3/train_local.sh
 python -m v3.train \
   --config v3/config.json \
-  --metadata path/to/train.csv --mel-dir path/to/mels_v3 \
-  --output-dir runs/v3_exp001 --fold 0 --folds 5
+  --metadata data/train.csv --mel-dir data/mels_v3 \
+  --output-dir runs/v3_exp001 --fold 0 --folds 1
 
 # 3. (optional Stage 2) pseudo-label soundscapes, then re-train with --semi-csv
 python -m v3.pseudo_label \
