@@ -198,7 +198,7 @@ def main() -> None:
         return train_loader, val_loader
 
     fold_list = [args.fold] if args.fold is not None else list(range(n_folds))
-    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
+    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed) if n_folds > 1 else None
 
     print("======== BirdCLEF v3 (4th-place-style) ========")
     print(f"Device: {device} | Backbone: {backbone} | Criterion: {criterion_name}")
@@ -290,7 +290,6 @@ def main() -> None:
             if val_metrics["macro_roc_auc"] > best_auc:
                 best_auc = float(val_metrics["macro_roc_auc"])
                 torch.save(unwrap_model(model).state_dict(), best_path)
-                torch.save(unwrap_model(model).state_dict(), out_dir / f"birdclef_v3_fold{fold}_best.pth")
                 print(f"  -> new best fold{fold} checkpoint (AUC={best_auc:.4f})")
                 report = per_class_report(y_true, y_prob, class_names=classes, threshold=0.5)
                 pd.DataFrame(report).to_csv(out_dir / f"per_class_metrics_fold{fold}.csv", index=False)

@@ -71,7 +71,7 @@ def main() -> None:
                 target_time=int(cfg["TARGET_TIME"]),
                 target_mels=int(cfg["TARGET_MELS"]),
             )
-            np.save(out_dir / mel_cache_name(p.as_posix()), mel)
+            np.save(out_dir / mel_cache_name(p.relative_to(audio_dir).as_posix()), mel)
             n += 1
         except Exception as e:  # noqa: BLE001
             print(f"  skip {p.name}: {e}")
