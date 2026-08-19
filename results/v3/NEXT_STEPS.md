@@ -1,6 +1,6 @@
 # v3 next steps (from honest caveats)
 
-Champion freeze: **single-fold** SoftAUC system, val macro ROC-AUC **0.9694**.  
+Recorded reference: **single-fold** SoftAUC system, val macro ROC-AUC **0.9694**.
 This file turns remaining caveats into an actionable plan.
 
 ## Caveat → plan
@@ -11,11 +11,11 @@ This file turns remaining caveats into an actionable plan.
 | 2 | SoftAUC optimizes AUC | Always ship **F1 + PR-AUC** next to AUC; do not claim “ranking-free” gains | Done in metrics + README |
 | 3 | Single fold only | Train **5-fold**, report **mean ± std** fold AUC | Code ready — run below |
 | 4 | Stage 2 unused | Pseudo-label `train_soundscapes` → re-train with `--semi-csv` | Code ready — run below |
-| 5 | Split not site-grouped | Keep stratified split for fair v1/v2/v3 compare; optional future: group by location | Accepted for portfolio freeze |
+| 5 | Split not site-grouped | Keep stratified split for fair v1/v2/v3 comparison; optional future: group by location | Recorded limitation |
 
-## A. 5-fold CV (credibility)
+## A. 5-fold CV (robustness)
 
-**Why:** one fold can be lucky; mean fold AUC is more honest in interviews/readmes.
+**Why:** one fold can be lucky; mean fold AUC is a more representative estimate than a single-fold result.
 
 ```bash
 # from repo root (mels already in data/mels_v3)
@@ -33,11 +33,11 @@ python -m v3.train \
 **Expect:** ~5× single-fold wall time (order of ~15–20 h on RTX 4070 @ 20 ep / fold).  
 **Outputs:** `runs/v3_5fold/model_fold{0..4}_best.pth` + `metrics.json` with `mean_fold_auc`.
 
-**Promote:** if mean fold AUC is solid, update `results/v3/README.md` with mean±std and optionally ensemble folds for inference.
+**Update the record:** if the 5-fold run is completed, add mean±std to `results/v3/README.md` and optionally ensemble folds for inference.
 
-## B. Stage 2 — pseudo-labels (leaderboard-style)
+## B. Stage 2 — pseudo-labels
 
-**Why:** unlabeled `train_soundscapes` is free signal used by top solutions.
+**Why:** unlabeled `train_soundscapes` can provide additional training signal for a semi-supervised run.
 
 ```bash
 bash v3/stage2_pseudo.sh
@@ -49,7 +49,7 @@ Pipeline:
 2. `v3.pseudo_label` → `runs/pseudo/semi_chunks.csv`  
 3. `v3.train --semi-csv ...` → soft-label mix on labeled + pseudo chunks  
 
-**Promote:** only if val AUC / F1 beat the Stage-1 champion under the **same** split protocol.
+**Update the reference:** only if val AUC / F1 improve on the Stage-1 reference under the **same** split protocol.
 
 ## C. Inference polish (cheap)
 

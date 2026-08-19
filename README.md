@@ -1,18 +1,17 @@
 # BirdCLEF+ 2025 — Sound Event Detection
 
 Multi-label bird species classification (206 species) with a full **versioned** pipeline:
-**v1** clean SED baseline → **v2** failed recipe experiment → **v3** system upgrade (champion).
+**v1** clean SED baseline → **v2** failed recipe experiment → **v3** system upgrade (best recorded configuration).
 
 | | |
 |---|---|
 | **Task** | Multi-label audio classification (206 species) |
-| **Champion** | **v3** — val macro ROC-AUC **0.9694** ([`models/v3/model_best.pth`](./models/v3/model_best.pth)) |
+| **Best recorded configuration** | **v3** — val macro ROC-AUC **0.9694** ([`models/v3/model_best.pth`](./models/v3/model_best.pth)) |
 | **v1 baseline** | 0.8529 — first published SED (log-mel 5 s) |
 | **v2 result** | 0.8401 — did **not** beat v1 (heavy reweight / sampler) |
 | **v3 recipe** | Soft AUC · 10 s · power-mel 256×512 · AttBlock · mixup · rare upsampling |
 | **Stack** | PyTorch · timm · librosa · torchvision |
-| **Hardware** | RTX 4070 (local champion run) · Tesla T4 / T4×2 (Kaggle) |
-| **v1 source notebook** | [danielsolo1770/notebookeb002d87be](https://www.kaggle.com/code/danielsolo1770/notebookeb002d87be) |
+| **Hardware** | RTX 4070 (local v3 run) · Tesla T4 / T4×2 (Kaggle) |
 | **License** | [MIT](./LICENSE) |
 
 > **How to read v3:** it is a **system upgrade** (features + model head + loss + augs), not “same model, only loss changed.” See [Honest limitations](#honest-limitations--roadmap) below.
@@ -51,7 +50,7 @@ BirdCLEF/
 │   ├── smoke_test.py         # fast local sanity
 │   └── __init__.py
 │
-├── v3/                       # version 3 — champion (val AUC 0.9694)
+├── v3/                       # version 3 — best recorded result (val AUC 0.9694)
 │   ├── train.py              # v3 training
 │   ├── config.json           # v3 hyperparameters
 │   ├── train_local.sh        # one-shot local launcher (mels + train)
@@ -68,7 +67,7 @@ BirdCLEF/
 │   ├── README.md
 │   ├── v1/model.pth          # v1 best (val AUC 0.8529)
 │   ├── v2/model_best.pth     # v2 best (0.8401) + model_last.pth
-│   └── v3/model_best.pth     # v3 champion (0.9694) + model_last.pth
+│   └── v3/model_best.pth     # v3 best recorded checkpoint (0.9694) + model_last.pth
 │
 ├── results/                  # per-version run results
 │   ├── v1/                   # training_summary.json + REPRODUCIBILITY.md + NOTES.md
@@ -87,19 +86,19 @@ BirdCLEF/
 
 ## Why this project
 
-BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram CNNs. This repo is a **portfolio-style experiment log**:
+BirdCLEF is a realistic bioacoustics challenge: short clips, **multi-label** targets, class imbalance, and spectrogram CNNs. This repository keeps a **versioned experiment log**:
 
 1. **v1** — clean baseline (val AUC 0.8529)  
-2. **v2** — aggressive imbalance tricks that **underperformed** (0.8401)  
-3. **v3** — competition-informed **system upgrade** that **won** (0.9694)
+2. **v2** — aggressive imbalance adjustments that **underperformed** (0.8401)
+3. **v3** — competition-informed **system upgrade** with the highest recorded validation score (0.9694)
 
-**Portfolio note:** Flagship supervised deep-learning project — full pipeline, honest metrics, frozen run cards, runnable CLIs.
+The repository includes the training and inference CLIs, frozen run cards, and documented limitations needed to interpret these results.
 
 ---
 
 ## Architecture
 
-### v3 champion (current best)
+### v3 configuration (best recorded validation result)
 
 ```
 Audio (10 s @ 32 kHz; random window train / first window val)
@@ -155,7 +154,7 @@ Validation uses a **random stratified 80/20 on `primary_label`** (same style as 
 |--------|--------|---------------------|
 | v3 ≠ pure ablation of v1 | **Documented** | Call it a **system upgrade** (features + head + loss + augs), not “only Soft AUC” |
 | SoftAUC optimizes AUC | **Documented** | Always report **F1 + PR-AUC** beside AUC |
-| Single fold only (champion) | **Code ready** | Run `bash v3/train_5fold.sh` → mean fold AUC for credibility |
+| Single-fold v3 result | **Code ready** | Run `bash v3/train_5fold.sh` → mean fold AUC for a more robust estimate |
 | Stage 2 pseudo-labels unused | **Code ready** | `bash v3/stage2_pseudo.sh` after Stage 1 folds exist |
 | Split not site-grouped | **Accepted for now** | Same split style as v1/v2 for fair version compare; site-grouped CV is future work |
 
@@ -173,7 +172,7 @@ pip install -r requirements.txt
 
 GitHub Actions installs the runtime dependencies, compiles the versioned source tree, and verifies the core imports on every push and pull request. It intentionally does **not** download competition data, load checkpoints, train models, or require a GPU; full training and validation remain explicit local or Kaggle runs.
 
-### Inference (champion = v3)
+### Inference (v3)
 
 ```bash
 python -m src.inference \
@@ -208,7 +207,7 @@ python -m v1.train \
   --output-dir runs/v1_exp
 ```
 
-### Train v2 (stronger recipe)
+### Train v2 (alternative recipe)
 
 ```bash
 python -m v2.train \
@@ -220,7 +219,7 @@ python -m v2.train \
 
 See [`docs/V2_TRAINING.md`](./docs/V2_TRAINING.md) for the full v2 guide (also running on Kaggle).
 
-### Train v3 (4th-place-style recipe — champion)
+### Train v3 (system-upgrade recipe)
 
 ```bash
 # 1. precompute v3 power-mels (10 s, 256×512) — 4-way parallel ≈ 16 min on 20 cores
@@ -228,7 +227,7 @@ python -m v3.precompute_mels \
   --audio-dir data/train_audio --output-dir data/mels_v3 \
   --config v3/config.json --metadata data/train.csv   # 4 procs × --metadata slice_N.csv
 
-# 2. train Stage 1 (champion freeze used single fold; prefer 5-fold for credibility)
+# 2. train Stage 1 (the recorded run used a single fold; prefer 5-fold for a more robust estimate)
 bash v3/train_local.sh          # single fold → runs/v3_exp001
 # bash v3/train_5fold.sh        # all 5 folds → runs/v3_5fold (long)
 

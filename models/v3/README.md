@@ -1,7 +1,7 @@
-# models/v3 — champion checkpoints
+# models/v3 — recorded checkpoints
 
 **Run exp001** — full **system upgrade** vs v1 (not a single-knob ablation).  
-Beats v1 val macro ROC-AUC **0.8529** → **0.9694**.
+Recorded val macro ROC-AUC: **0.9694**, compared with **0.8529** for v1 under the repository's version-comparison split.
 
 | File | Role |
 |------|------|
