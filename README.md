@@ -169,6 +169,10 @@ Details + exact commands: [`results/v3/NEXT_STEPS.md`](./results/v3/NEXT_STEPS.m
 pip install -r requirements.txt
 ```
 
+### Continuous integration (CPU-only)
+
+GitHub Actions installs the runtime dependencies, compiles the versioned source tree, and verifies the core imports on every push and pull request. It intentionally does **not** download competition data, load checkpoints, train models, or require a GPU; full training and validation remain explicit local or Kaggle runs.
+
 ### Inference (champion = v3)
 
 ```bash
